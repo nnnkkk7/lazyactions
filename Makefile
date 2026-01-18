@@ -1,11 +1,19 @@
-.PHONY: test build run lint cover cover-check cover-by-pkg ci dev fmt clean tools
+.PHONY: test test-unit test-integration build run lint cover cover-check cover-by-pkg ci dev fmt clean tools
 
 # Coverage threshold
 COVERAGE_THRESHOLD := 70
 
-# Test
+# Test (all tests)
 test:
 	go test -v -race ./...
+
+# Unit tests only (exclude integration tests)
+test-unit:
+	go test -v -race $(shell go list ./... | grep -v /test/)
+
+# Integration tests only
+test-integration:
+	go test -v -race ./test/integration/...
 
 # Coverage measurement
 cover:
