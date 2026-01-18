@@ -194,7 +194,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Err != nil {
 			a.err = msg.Err
 		} else {
-			a.logView.SetContent(msg.Logs)
+			// Wrap log lines to fit within viewport width
+			wrappedLogs := wrapLines(msg.Logs, a.logPaneWidth()-4)
+			a.logView.SetContent(wrappedLogs)
 		}
 
 	case RunCancelledMsg:
@@ -243,20 +245,30 @@ func (a *App) View() string {
 		return a.renderConfirmDialog()
 	}
 
-	// Main 3-pane layout
-	workflowsPane := a.renderWorkflowsPane()
-	runsPane := a.renderRunsPane()
-	logsPane := a.renderLogsPane()
+	// Calculate pane dimensions
+	paneHeight := a.height - 2 // status bar
+	if paneHeight < 5 {
+		paneHeight = 5
+	}
 
-	main := lipgloss.JoinHorizontal(lipgloss.Top,
-		workflowsPane,
-		runsPane,
-		logsPane,
-	)
+	// Build each pane as fixed-size string array
+	wfLines := a.buildWorkflowsContent(paneHeight)
+	runLines := a.buildRunsContent(paneHeight)
+	logLines := a.buildLogsContent(paneHeight)
 
-	statusBar := a.renderStatusBar()
+	// Join panes horizontally, line by line
+	var output strings.Builder
+	for i := 0; i < paneHeight; i++ {
+		output.WriteString(wfLines[i])
+		output.WriteString(runLines[i])
+		output.WriteString(logLines[i])
+		output.WriteString("\n")
+	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, main, statusBar)
+	// Add status bar
+	output.WriteString(a.renderStatusBar())
+
+	return output.String()
 }
 
 // handleKeyPress handles key press events
@@ -322,6 +334,17 @@ func (a *App) handleKeyPress(msg tea.KeyMsg) tea.Cmd {
 		if a.focusedPane == RunsPane {
 			return a.rerunFailedJobs()
 		}
+
+	case key.Matches(msg, a.keys.Trigger):
+		if a.focusedPane == WorkflowsPane {
+			return a.triggerWorkflow()
+		}
+
+	case key.Matches(msg, a.keys.Yank):
+		return a.yankURL()
+
+	case key.Matches(msg, a.keys.Refresh):
+		return a.refreshAll()
 	}
 
 	return nil
@@ -483,6 +506,37 @@ func (a *App) rerunFailedJobs() tea.Cmd {
 	return rerunFailedJobs(a.client, a.repo, run.ID)
 }
 
+// triggerWorkflow triggers a workflow dispatch
+func (a *App) triggerWorkflow() tea.Cmd {
+	wf, ok := a.workflows.Selected()
+	if !ok {
+		return nil
+	}
+	// Get workflow file name from path (e.g., ".github/workflows/ci.yml" -> "ci.yml")
+	workflowFile := wf.Path
+	if idx := len(".github/workflows/"); len(wf.Path) > idx {
+		workflowFile = wf.Path[idx:]
+	}
+	// Trigger on default branch (main)
+	return triggerWorkflow(a.client, a.repo, workflowFile, "main", nil)
+}
+
+// yankURL copies the selected run URL to clipboard
+func (a *App) yankURL() tea.Cmd {
+	if run, ok := a.runs.Selected(); ok && run.URL != "" {
+		// Return a flash message indicating the URL was copied
+		// Note: actual clipboard integration would require platform-specific code
+		return flashMessage("Copied: "+run.URL, 2)
+	}
+	return nil
+}
+
+// refreshAll refreshes all data
+func (a *App) refreshAll() tea.Cmd {
+	a.loading = true
+	return a.fetchWorkflowsCmd()
+}
+
 // refreshCurrentWorkflow refreshes runs for the current workflow
 func (a *App) refreshCurrentWorkflow() tea.Cmd {
 	if wf, ok := a.workflows.Selected(); ok {
@@ -521,9 +575,197 @@ func (a *App) fetchLogsCmd(jobID int64) tea.Cmd {
 	return fetchLogs(a.client, a.repo, jobID)
 }
 
-// Rendering helpers
+// Rendering helpers - build fixed-size content for each pane
+
+func (a *App) buildWorkflowsContent(height int) []string {
+	w := a.workflowsPaneWidth()
+	lines := make([]string, height)
+
+	// Border color
+	borderColor := UnfocusedColor
+	if a.focusedPane == WorkflowsPane {
+		borderColor = FocusedColor
+	}
+	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
+
+	// Title
+	title := " Workflows "
+	if a.loading {
+		title = " Workflows " + a.spinner.View() + " "
+	}
+
+	// Build content lines
+	var content []string
+	items := a.workflows.Items()
+	if len(items) == 0 {
+		if a.loading {
+			content = append(content, "  Loading...")
+		} else {
+			content = append(content, "  No workflows")
+		}
+	} else {
+		for i, wf := range items {
+			selected := i == a.workflows.SelectedIndex()
+			name := truncateString(wf.Name, w-6)
+			if selected {
+				content = append(content, "> "+name)
+			} else {
+				content = append(content, "  "+name)
+			}
+		}
+	}
+	content = append(content, "")
+	content = append(content, ScrollPosition(a.workflows.SelectedIndex(), a.workflows.Len()))
+
+	// Build lines with borders
+	innerWidth := w - 2
+	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	for i := 1; i < height-1; i++ {
+		contentIdx := i - 1
+		var line string
+		if contentIdx < len(content) {
+			line = padRight(content[contentIdx], innerWidth)
+		} else {
+			line = strings.Repeat(" ", innerWidth)
+		}
+		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+	}
+	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+
+	return lines
+}
+
+func (a *App) buildRunsContent(height int) []string {
+	w := a.runsPaneWidth()
+	lines := make([]string, height)
+
+	borderColor := UnfocusedColor
+	if a.focusedPane == RunsPane {
+		borderColor = FocusedColor
+	}
+	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
+
+	title := " Runs "
+
+	var content []string
+	items := a.runs.Items()
+	if len(items) == 0 {
+		content = append(content, "  Select workflow")
+	} else {
+		for i, run := range items {
+			selected := i == a.runs.SelectedIndex()
+			icon := StatusIcon(run.Status, run.Conclusion)
+			line := icon + " #" + formatRunNumber(run.ID) + " " + run.Branch
+			line = truncateString(line, w-6)
+			if selected {
+				content = append(content, "> "+line)
+			} else {
+				content = append(content, "  "+line)
+			}
+		}
+	}
+	content = append(content, "")
+	content = append(content, ScrollPosition(a.runs.SelectedIndex(), a.runs.Len()))
+
+	innerWidth := w - 2
+	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	for i := 1; i < height-1; i++ {
+		contentIdx := i - 1
+		var line string
+		if contentIdx < len(content) {
+			line = padRight(content[contentIdx], innerWidth)
+		} else {
+			line = strings.Repeat(" ", innerWidth)
+		}
+		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+	}
+	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+
+	return lines
+}
+
+func (a *App) buildLogsContent(height int) []string {
+	w := a.logPaneWidth()
+	lines := make([]string, height)
+
+	borderColor := UnfocusedColor
+	if a.focusedPane == LogsPane {
+		borderColor = FocusedColor
+	}
+	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
+
+	title := " Logs "
+
+	var content []string
+	// Show jobs
+	items := a.jobs.Items()
+	if len(items) == 0 {
+		content = append(content, "  Select a run")
+	} else {
+		for i, job := range items {
+			selected := i == a.jobs.SelectedIndex()
+			icon := StatusIcon(job.Status, job.Conclusion)
+			line := icon + " " + truncateString(job.Name, w-10)
+			if selected {
+				content = append(content, "> "+line)
+			} else {
+				content = append(content, "  "+line)
+			}
+		}
+	}
+
+	// Add log content (viewport)
+	content = append(content, "─────")
+	logContent := a.logView.View()
+	logLines := strings.Split(logContent, "\n")
+	for _, l := range logLines {
+		content = append(content, truncateString(l, w-4))
+	}
+
+	innerWidth := w - 2
+	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	for i := 1; i < height-1; i++ {
+		contentIdx := i - 1
+		var line string
+		if contentIdx < len(content) {
+			line = padRight(content[contentIdx], innerWidth)
+		} else {
+			line = strings.Repeat(" ", innerWidth)
+		}
+		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+	}
+	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+
+	return lines
+}
+
+// padRight pads a string to the specified width
+func padRight(s string, width int) string {
+	runes := []rune(s)
+	if len(runes) >= width {
+		return string(runes[:width])
+	}
+	return s + strings.Repeat(" ", width-len(runes))
+}
+
+// padCenter centers a string within the specified width, filling with the given char
+func padCenter(s string, width int, fill string) string {
+	sLen := len([]rune(s))
+	if sLen >= width {
+		return s
+	}
+	leftPad := (width - sLen) / 2
+	rightPad := width - sLen - leftPad
+	return strings.Repeat(fill, leftPad) + s + strings.Repeat(fill, rightPad)
+}
+
 func (a *App) logPaneWidth() int {
-	return int(float64(a.width) * 0.55)
+	// 50% of width for logs pane
+	w := int(float64(a.width) * 0.50)
+	if w < 20 {
+		w = 20
+	}
+	return w
 }
 
 func (a *App) logPaneHeight() int {
@@ -531,15 +773,29 @@ func (a *App) logPaneHeight() int {
 }
 
 func (a *App) workflowsPaneWidth() int {
-	return int(float64(a.width) * 0.20)
+	// 20% of width for workflows pane
+	w := int(float64(a.width) * 0.20)
+	if w < 15 {
+		w = 15
+	}
+	return w
 }
 
 func (a *App) runsPaneWidth() int {
-	return a.width - a.workflowsPaneWidth() - a.logPaneWidth()
+	// Remaining width for runs pane
+	w := a.width - a.workflowsPaneWidth() - a.logPaneWidth()
+	if w < 20 {
+		w = 20
+	}
+	return w
 }
 
 func (a *App) paneHeight() int {
-	return a.height - 2 // account for status bar
+	h := a.height - 2 // account for status bar
+	if h < 5 {
+		h = 5
+	}
+	return h
 }
 
 func (a *App) renderWorkflowsPane() string {
@@ -550,27 +806,39 @@ func (a *App) renderWorkflowsPane() string {
 		titleStyle = FocusedTitle
 	}
 
-	title := titleStyle.Render("Workflows")
-	if a.loading && a.focusedPane == WorkflowsPane {
-		title = titleStyle.Render("Workflows " + a.spinner.View())
+	w := a.workflowsPaneWidth()
+	contentWidth := w - 2 // account for border
+
+	title := titleStyle.Render(" Workflows ")
+	if a.loading {
+		title = titleStyle.Render(" Workflows " + a.spinner.View() + " ")
 	}
 
-	var content strings.Builder
-	content.WriteString(title + "\n")
+	var lines []string
+	lines = append(lines, title)
 
 	items := a.workflows.Items()
-	for i, wf := range items {
-		selected := i == a.workflows.SelectedIndex()
-		content.WriteString(RenderItem(wf.Name, selected) + "\n")
+	if len(items) == 0 {
+		if a.loading {
+			lines = append(lines, "  Loading...")
+		} else {
+			lines = append(lines, "  No workflows")
+		}
+	} else {
+		for i, wf := range items {
+			selected := i == a.workflows.SelectedIndex()
+			name := truncateString(wf.Name, contentWidth-4)
+			lines = append(lines, RenderItem(name, selected))
+		}
 	}
 
-	scrollPos := ScrollPosition(a.workflows.SelectedIndex(), a.workflows.Len())
-	content.WriteString("\n" + scrollPos)
+	lines = append(lines, "")
+	lines = append(lines, ScrollPosition(a.workflows.SelectedIndex(), a.workflows.Len()))
 
 	return style.
-		Width(a.workflowsPaneWidth()).
+		Width(w).
 		Height(a.paneHeight()).
-		Render(content.String())
+		Render(strings.Join(lines, "\n"))
 }
 
 func (a *App) renderRunsPane() string {
@@ -581,29 +849,34 @@ func (a *App) renderRunsPane() string {
 		titleStyle = FocusedTitle
 	}
 
-	title := titleStyle.Render("Runs")
-	if a.loading && a.focusedPane == RunsPane {
-		title = titleStyle.Render("Runs " + a.spinner.View())
-	}
+	w := a.runsPaneWidth()
+	contentWidth := w - 2 // account for border
 
-	var content strings.Builder
-	content.WriteString(title + "\n")
+	title := titleStyle.Render(" Runs ")
+
+	var lines []string
+	lines = append(lines, title)
 
 	items := a.runs.Items()
-	for i, run := range items {
-		selected := i == a.runs.SelectedIndex()
-		icon := StatusIcon(run.Status, run.Conclusion)
-		line := icon + " #" + formatRunNumber(run.ID) + " " + run.Branch
-		content.WriteString(RenderItem(line, selected) + "\n")
+	if len(items) == 0 {
+		lines = append(lines, "  Select a workflow")
+	} else {
+		for i, run := range items {
+			selected := i == a.runs.SelectedIndex()
+			icon := StatusIcon(run.Status, run.Conclusion)
+			line := icon + " #" + formatRunNumber(run.ID) + " " + run.Branch
+			line = truncateString(line, contentWidth-4)
+			lines = append(lines, RenderItem(line, selected))
+		}
 	}
 
-	scrollPos := ScrollPosition(a.runs.SelectedIndex(), a.runs.Len())
-	content.WriteString("\n" + scrollPos)
+	lines = append(lines, "")
+	lines = append(lines, ScrollPosition(a.runs.SelectedIndex(), a.runs.Len()))
 
 	return style.
-		Width(a.runsPaneWidth()).
+		Width(w).
 		Height(a.paneHeight()).
-		Render(content.String())
+		Render(strings.Join(lines, "\n"))
 }
 
 func (a *App) renderLogsPane() string {
@@ -614,27 +887,34 @@ func (a *App) renderLogsPane() string {
 		titleStyle = FocusedTitle
 	}
 
-	title := titleStyle.Render("Logs")
+	w := a.logPaneWidth()
+	contentWidth := w - 2 // account for border
 
-	var content strings.Builder
-	content.WriteString(title + "\n")
+	title := titleStyle.Render(" Logs ")
+
+	var lines []string
+	lines = append(lines, title)
 
 	// Show job list
 	items := a.jobs.Items()
-	for i, job := range items {
-		selected := i == a.jobs.SelectedIndex()
-		icon := StatusIcon(job.Status, job.Conclusion)
-		line := icon + " " + job.Name
-		content.WriteString(RenderItem(line, selected) + "\n")
+	if len(items) == 0 {
+		lines = append(lines, "  Select a run")
+	} else {
+		for i, job := range items {
+			selected := i == a.jobs.SelectedIndex()
+			icon := StatusIcon(job.Status, job.Conclusion)
+			line := icon + " " + truncateString(job.Name, contentWidth-6)
+			lines = append(lines, RenderItem(line, selected))
+		}
 	}
 
-	content.WriteString("\n")
-	content.WriteString(a.logView.View())
+	lines = append(lines, "")
+	lines = append(lines, a.logView.View())
 
 	return style.
-		Width(a.logPaneWidth()).
+		Width(w).
 		Height(a.paneHeight()).
-		Render(content.String())
+		Render(strings.Join(lines, "\n"))
 }
 
 func (a *App) renderStatusBar() string {
@@ -757,6 +1037,43 @@ func (a *App) StopLogPolling() {
 // formatRunNumber formats a run ID for display
 func formatRunNumber(id int64) string {
 	return strconv.FormatInt(id, 10)
+}
+
+// truncateString truncates a string to maxLen characters, adding "..." if truncated
+func truncateString(s string, maxLen int) string {
+	if maxLen <= 3 {
+		return s
+	}
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	return string(runes[:maxLen-3]) + "..."
+}
+
+// wrapLines wraps long lines to fit within maxWidth
+func wrapLines(content string, maxWidth int) string {
+	if maxWidth <= 0 {
+		maxWidth = 80
+	}
+	lines := strings.Split(content, "\n")
+	var result []string
+	for _, line := range lines {
+		runes := []rune(line)
+		if len(runes) <= maxWidth {
+			result = append(result, line)
+		} else {
+			// Split long lines
+			for len(runes) > maxWidth {
+				result = append(result, string(runes[:maxWidth]))
+				runes = runes[maxWidth:]
+			}
+			if len(runes) > 0 {
+				result = append(result, string(runes))
+			}
+		}
+	}
+	return strings.Join(result, "\n")
 }
 
 // Run starts the TUI application

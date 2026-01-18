@@ -164,30 +164,31 @@ func TestRenderItem_LongText(t *testing.T) {
 // =============================================================================
 
 func TestScrollPosition_Normal(t *testing.T) {
-	result := ScrollPosition(1, 10)
+	// Input is 0-indexed, output is 1-indexed for display
+	result := ScrollPosition(0, 10)
 	if result != "1/10" {
-		t.Errorf("ScrollPosition(1, 10) = %q, want \"1/10\"", result)
+		t.Errorf("ScrollPosition(0, 10) = %q, want \"1/10\"", result)
 	}
 }
 
 func TestScrollPosition_FirstOfMany(t *testing.T) {
-	result := ScrollPosition(1, 100)
+	result := ScrollPosition(0, 100)
 	if result != "1/100" {
-		t.Errorf("ScrollPosition(1, 100) = %q, want \"1/100\"", result)
+		t.Errorf("ScrollPosition(0, 100) = %q, want \"1/100\"", result)
 	}
 }
 
 func TestScrollPosition_LastOfMany(t *testing.T) {
-	result := ScrollPosition(100, 100)
+	result := ScrollPosition(99, 100)
 	if result != "100/100" {
-		t.Errorf("ScrollPosition(100, 100) = %q, want \"100/100\"", result)
+		t.Errorf("ScrollPosition(99, 100) = %q, want \"100/100\"", result)
 	}
 }
 
 func TestScrollPosition_SingleItem(t *testing.T) {
-	result := ScrollPosition(1, 1)
+	result := ScrollPosition(0, 1)
 	if result != "1/1" {
-		t.Errorf("ScrollPosition(1, 1) = %q, want \"1/1\"", result)
+		t.Errorf("ScrollPosition(0, 1) = %q, want \"1/1\"", result)
 	}
 }
 
@@ -199,23 +200,23 @@ func TestScrollPosition_ZeroTotal(t *testing.T) {
 }
 
 func TestScrollPosition_NegativeTotal(t *testing.T) {
-	result := ScrollPosition(1, -1)
+	result := ScrollPosition(0, -1)
 	if result != "0/0" {
-		t.Errorf("ScrollPosition(1, -1) = %q, want \"0/0\"", result)
+		t.Errorf("ScrollPosition(0, -1) = %q, want \"0/0\"", result)
 	}
 }
 
 func TestScrollPosition_MiddlePosition(t *testing.T) {
-	result := ScrollPosition(5, 10)
+	result := ScrollPosition(4, 10)
 	if result != "5/10" {
-		t.Errorf("ScrollPosition(5, 10) = %q, want \"5/10\"", result)
+		t.Errorf("ScrollPosition(4, 10) = %q, want \"5/10\"", result)
 	}
 }
 
 func TestScrollPosition_LargeNumbers(t *testing.T) {
-	result := ScrollPosition(999, 1000)
+	result := ScrollPosition(998, 1000)
 	if result != "999/1000" {
-		t.Errorf("ScrollPosition(999, 1000) = %q, want \"999/1000\"", result)
+		t.Errorf("ScrollPosition(998, 1000) = %q, want \"999/1000\"", result)
 	}
 }
 

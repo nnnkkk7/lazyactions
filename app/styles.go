@@ -11,13 +11,13 @@ var (
 	FocusedColor   = lipgloss.Color("#00FF00")
 	UnfocusedColor = lipgloss.Color("#666666")
 
-	// Pane styles
+	// Pane styles - use thin border for compact UI
 	FocusedPane = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
+			Border(lipgloss.NormalBorder()).
 			BorderForeground(FocusedColor)
 
 	UnfocusedPane = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
+			Border(lipgloss.NormalBorder()).
 			BorderForeground(UnfocusedColor)
 
 	// Title styles
@@ -87,10 +87,10 @@ func RenderItem(text string, selected bool) string {
 	return NormalItem.Render("  " + text)
 }
 
-// ScrollPosition renders scroll position in "1/10" format.
+// ScrollPosition renders scroll position in "1/10" format (1-indexed for display).
 func ScrollPosition(current, total int) string {
 	if total <= 0 {
 		return "0/0"
 	}
-	return fmt.Sprintf("%d/%d", current, total)
+	return fmt.Sprintf("%d/%d", current+1, total)
 }
