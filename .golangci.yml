@@ -1,0 +1,26 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  exclusions:
+    rules:
+      # Ignore errcheck in test files for common test patterns
+      - path: _test\.go
+        linters:
+          - errcheck
+      # Ignore staticcheck QF suggestions
+      - linters:
+          - staticcheck
+        text: "QF"
+      # Ignore empty branch in tests (often used for wait loops)
+      - path: _test\.go
+        linters:
+          - staticcheck
+        text: "SA9003"
+      # Ignore ineffassign in tests
+      - path: _test\.go
+        linters:
+          - ineffassign
