@@ -1,4 +1,4 @@
-.PHONY: test build run lint cover cover-check cover-by-pkg ci dev fmt clean
+.PHONY: test build run lint cover cover-check cover-by-pkg ci dev fmt clean tools
 
 # Coverage threshold
 COVERAGE_THRESHOLD := 70
@@ -39,8 +39,16 @@ run:
 	go run ./cmd/lazyactions
 
 # Lint
-lint:
-	golangci-lint run
+GOBIN ?= $(shell go env GOPATH)/bin
+GOLANGCI_LINT := $(GOBIN)/golangci-lint
+
+tools: $(GOLANGCI_LINT)
+
+$(GOLANGCI_LINT):
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+
+lint: tools
+	$(GOLANGCI_LINT) run
 
 # CI (lint + coverage check + build)
 ci: lint cover-check build
@@ -53,6 +61,4 @@ fmt:
 	go fmt ./...
 	goimports -w .
 
-# Clean
-clean:
-	rm -rf bin/ coverage.out coverage.html
+
