@@ -78,6 +78,18 @@ func (c *realClient) ListRuns(ctx context.Context, repo Repository, opts *ListRu
 		ListOptions: github.ListOptions{PerPage: 30},
 	}
 	if opts != nil {
+		if opts.PerPage > 0 {
+			ghOpts.ListOptions.PerPage = opts.PerPage
+		}
+		if opts.Branch != "" {
+			ghOpts.Branch = opts.Branch
+		}
+		if opts.Status != "" {
+			ghOpts.Status = opts.Status
+		}
+		if opts.Event != "" {
+			ghOpts.Event = opts.Event
+		}
 		if opts.WorkflowID > 0 {
 			runs, resp, err := c.client.Actions.ListWorkflowRunsByID(ctx, repo.Owner, repo.Name, opts.WorkflowID, ghOpts)
 			c.updateRateLimit(resp)
@@ -85,12 +97,6 @@ func (c *realClient) ListRuns(ctx context.Context, repo Repository, opts *ListRu
 				return nil, WrapAPIError(err)
 			}
 			return convertRuns(runs.WorkflowRuns), nil
-		}
-		if opts.Branch != "" {
-			ghOpts.Branch = opts.Branch
-		}
-		if opts.Status != "" {
-			ghOpts.Status = opts.Status
 		}
 	}
 
