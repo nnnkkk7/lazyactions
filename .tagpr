@@ -1,0 +1,22 @@
+[tagpr]
+    # Release target branch
+    releaseBranch = main
+
+    # Version file to manage version number
+    versionFile = version.go
+
+    # Use v-prefix for tags (v1.0.0 format)
+    vPrefix = true
+
+    # GitHub Release creation method
+    # true: auto create, draft: create draft, false: do not create
+    release = false
+
+    # Labels indicating major version upgrade
+    majorLabels = ["breaking-change", "major"]
+
+    # Labels indicating minor version upgrade
+    minorLabels = ["feature", "enhancement", "minor"]
+
+    # Commit message prefix
+    commitPrefix = "[tagpr]"

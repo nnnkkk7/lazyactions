@@ -1,0 +1,119 @@
+# GoReleaser v2 configuration
+version: 2
+
+# Commands to run before build
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+# Build configuration
+builds:
+  - id: lazyactions
+    main: ./cmd/lazyactions
+    binary: lazyactions
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.Version={{.Version}}
+      - -X main.Commit={{.Commit}}
+      - -X main.BuildTime={{.Date}}
+
+# Archive settings
+archives:
+  - id: lazyactions-archive
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+
+# Generate checksum file
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+# Snapshot build naming
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+# CHANGELOG generation
+changelog:
+  use: github-native
+
+# GitHub Release settings
+release:
+  github:
+    owner: nnnkkk7
+    name: lazyactions
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## lazyactions {{ .Version }}
+
+    A TUI to visualize and manage GitHub Actions.
+
+    ### Installation
+
+    **Homebrew (macOS/Linux)**:
+    ```bash
+    brew install nnnkkk7/tap/lazyactions
+    ```
+
+    **Go Install**:
+    ```bash
+    go install github.com/nnnkkk7/lazyactions/cmd/lazyactions@{{ .Tag }}
+    ```
+
+    **Binary Download**:
+    Download the appropriate binary for your platform from the assets below.
+
+  footer: |
+    ---
+
+    **Full Changelog**: https://github.com/nnnkkk7/lazyactions/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    **Documentation**: https://github.com/nnnkkk7/lazyactions#readme
+
+# Homebrew Formula settings
+brews:
+  - name: lazyactions
+    repository:
+      owner: nnnkkk7
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/nnnkkk7/lazyactions"
+    description: "A TUI to visualize and manage GitHub Actions"
+    license: "MIT"
+    install: |
+      bin.install "lazyactions"
+    test: |
+      system "#{bin}/lazyactions", "--version"
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@lazyactions.dev
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
