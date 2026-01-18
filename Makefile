@@ -53,6 +53,4 @@ fmt:
 	go fmt ./...
 	goimports -w .
 
-# Clean
-clean:
-	rm -rf bin/ coverage.out coverage.html
+
