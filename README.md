@@ -104,7 +104,7 @@ make cover
 make lint
 ```
 
-### Full CI Check
+### Full CI Che
 
 ```bash
 make ci
