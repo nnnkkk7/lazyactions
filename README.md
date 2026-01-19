@@ -7,7 +7,7 @@
 
 
  [![CI](https://github.com/nnnkkk7/lazyactions/actions/workflows/ci.yaml/badge.svg)](https://github.com/nnnkkk7/lazyactions/actions/workflows/ci.yaml)
- [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://go.dev/)
+ [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://go.dev/)
  [![Go Report Card](https://goreportcard.com/badge/github.com/nnnkkk7/lazyactions)](https://goreportcard.com/report/github.com/nnnkkk7/lazyactions)
  [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -40,7 +40,7 @@ Tired of switching between your terminal and browser to check CI status? **lazya
 
 ## Installation
 
-### Homebrew
+### Homebrew (Recommended)
 
 ```bash
 brew install nnnkkk7/tap/lazyactions
@@ -48,11 +48,15 @@ brew install nnnkkk7/tap/lazyactions
 
 ### Using Go
 
+Requires Go 1.24+
+
 ```bash
 go install github.com/nnnkkk7/lazyactions/cmd/lazyactions@latest
 ```
 
 ### From Source
+
+Requires Go 1.24+
 
 ```bash
 git clone https://github.com/nnnkkk7/lazyactions.git
@@ -60,11 +64,6 @@ cd lazyactions
 make build
 # Binary: ./bin/lazyactions
 ```
-
-### Prerequisites
-
-- Go 1.21+
-- GitHub CLI (`gh`) authenticated, **OR** `GITHUB_TOKEN` environment variable
 
 ## Authentication
 
