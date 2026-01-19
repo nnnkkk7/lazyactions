@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.0.3](https://github.com/nnnkkk7/lazyactions/compare/v0.0.2...v0.0.3) - 2026-01-19
+- fix: enhance error handling and string display width management by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/16
+- refactor: update LogsLoadedMsg to include JobID and enhance log handling by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/17
+
 ## [v0.0.2](https://github.com/nnnkkk7/lazyactions/compare/v0.0.1...v0.0.2) - 2026-01-18
 - ci: fix setup go by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/10
 - ci: bump actions/setup-go from 5 to 6 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/6
