@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.0.7](https://github.com/nnnkkk7/lazyactions/compare/v0.0.6...v0.0.7) - 2026-01-19
+- docs: update readme by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/30
+- deps: use gotestsum by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/32
+- refactor: improve URL copying func by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/33
+- docs: revise support section in README by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/34
+- chore: downgrade go version by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/35
+
 ## [v0.0.6](https://github.com/nnnkkk7/lazyactions/compare/v0.0.5...v0.0.6) - 2026-01-19
 - feat: integrate clipboard functionality for URL copying by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/28
 
