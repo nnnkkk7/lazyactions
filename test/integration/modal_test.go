@@ -176,7 +176,7 @@ func TestModal_EscapeHandling(t *testing.T) {
 		ta.App.Update(app.WorkflowsLoadedMsg{Workflows: DefaultTestWorkflows()})
 		ta.App.Update(app.RunsLoadedMsg{Runs: DefaultTestRuns()})
 		ta.App.Update(app.JobsLoadedMsg{Jobs: DefaultTestJobs()})
-		ta.App.Update(app.LogsLoadedMsg{Logs: DefaultTestLogs()})
+		ta.App.Update(app.LogsLoadedMsg{JobID: 1001, Logs: DefaultTestLogs()})
 
 		// Move to Logs and enter fullscreen
 		ta.SendKey("l")

@@ -53,8 +53,9 @@ func fetchLogs(client github.Client, repo github.Repository, jobID int64) tea.Cm
 	return func() tea.Msg {
 		logs, err := client.GetJobLogs(context.Background(), repo, jobID)
 		return LogsLoadedMsg{
-			Logs: logs,
-			Err:  err,
+			JobID: jobID,
+			Logs:  logs,
+			Err:   err,
 		}
 	}
 }

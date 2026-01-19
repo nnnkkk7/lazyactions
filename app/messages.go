@@ -28,8 +28,9 @@ type JobsLoadedMsg struct {
 
 // LogsLoadedMsg is sent when job logs have been fetched from GitHub.
 type LogsLoadedMsg struct {
-	Logs string
-	Err  error
+	JobID int64
+	Logs  string
+	Err   error
 }
 
 // === Action Results ===

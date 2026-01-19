@@ -110,8 +110,11 @@ func TestJobsLoadedMsg(t *testing.T) {
 func TestLogsLoadedMsg(t *testing.T) {
 	t.Run("with logs", func(t *testing.T) {
 		logs := "2024-01-01T00:00:00Z Running tests...\n2024-01-01T00:00:01Z Tests passed!"
-		msg := LogsLoadedMsg{Logs: logs, Err: nil}
+		msg := LogsLoadedMsg{JobID: 123, Logs: logs, Err: nil}
 
+		if msg.JobID != 123 {
+			t.Errorf("expected JobID 123, got %d", msg.JobID)
+		}
 		if msg.Logs == "" {
 			t.Error("expected logs, got empty string")
 		}
@@ -122,8 +125,11 @@ func TestLogsLoadedMsg(t *testing.T) {
 
 	t.Run("with error", func(t *testing.T) {
 		err := errors.New("logs not available")
-		msg := LogsLoadedMsg{Logs: "", Err: err}
+		msg := LogsLoadedMsg{JobID: 456, Logs: "", Err: err}
 
+		if msg.JobID != 456 {
+			t.Errorf("expected JobID 456, got %d", msg.JobID)
+		}
 		if msg.Logs != "" {
 			t.Errorf("expected empty logs, got %q", msg.Logs)
 		}

@@ -206,7 +206,10 @@ func TestApp_Update_LogsLoadedMsg(t *testing.T) {
 	app.width = 80
 	app.height = 20
 
-	msg := LogsLoadedMsg{Logs: "test logs"}
+	// Set up jobs first so LogsLoadedMsg can match the selected job
+	app.jobs.SetItems([]github.Job{{ID: 100, Name: "test"}})
+
+	msg := LogsLoadedMsg{JobID: 100, Logs: "test logs"}
 	model, _ := app.Update(msg)
 	updated := model.(*App)
 

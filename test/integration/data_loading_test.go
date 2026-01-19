@@ -68,7 +68,7 @@ func TestDataLoading_Success(t *testing.T) {
 		ta.App.Update(app.WorkflowsLoadedMsg{Workflows: DefaultTestWorkflows()})
 		ta.App.Update(app.RunsLoadedMsg{Runs: DefaultTestRuns()})
 		ta.App.Update(app.JobsLoadedMsg{Jobs: DefaultTestJobs()})
-		ta.App.Update(app.LogsLoadedMsg{Logs: DefaultTestLogs()})
+		ta.App.Update(app.LogsLoadedMsg{JobID: 1001, Logs: DefaultTestLogs()})
 
 		view := ta.App.View()
 		if len(view) == 0 {
@@ -138,7 +138,7 @@ func TestDataLoading_ErrorHandling(t *testing.T) {
 			ta.App.Update(app.WorkflowsLoadedMsg{Workflows: DefaultTestWorkflows()})
 			ta.App.Update(app.RunsLoadedMsg{Runs: DefaultTestRuns()})
 			ta.App.Update(app.JobsLoadedMsg{Jobs: DefaultTestJobs()})
-			ta.App.Update(app.LogsLoadedMsg{Err: tt.err})
+			ta.App.Update(app.LogsLoadedMsg{JobID: 1001, Err: tt.err})
 
 			view := ta.App.View()
 			if len(view) == 0 {

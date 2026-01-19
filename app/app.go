@@ -191,12 +191,17 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case LogsLoadedMsg:
-		if msg.Err != nil {
-			a.err = msg.Err
-		} else {
-			// Wrap log lines to fit within viewport width
-			wrappedLogs := wrapLines(msg.Logs, a.logPaneWidth()-4)
-			a.logView.SetContent(wrappedLogs)
+		// Only update logs if they are for the currently selected job
+		// This prevents stale logs from overwriting newer ones
+		if job, ok := a.jobs.Selected(); ok && job.ID == msg.JobID {
+			if msg.Err != nil {
+				a.err = msg.Err
+				a.logView.SetContent("Failed to load logs")
+			} else {
+				// Wrap log lines to fit within viewport width
+				wrappedLogs := wrapLines(msg.Logs, a.logPaneWidth()-4)
+				a.logView.SetContent(wrappedLogs)
+			}
 		}
 
 	case RunCancelledMsg:
@@ -470,6 +475,8 @@ func (a *App) onRunSelectionChange() tea.Cmd {
 // onJobSelectionChange handles job selection change
 func (a *App) onJobSelectionChange() tea.Cmd {
 	if job, ok := a.jobs.Selected(); ok {
+		// Clear current logs and show loading state while fetching new logs
+		a.logView.SetContent("Loading logs...")
 		return a.fetchLogsCmd(job.ID)
 	}
 	return nil
@@ -1041,7 +1048,7 @@ func (a *App) StartLogPolling(ctx context.Context) tea.Cmd {
 		if ctx.Err() != nil {
 			return nil
 		}
-		return LogsLoadedMsg{Logs: logs, Err: err}
+		return LogsLoadedMsg{JobID: job.ID, Logs: logs, Err: err}
 	})
 
 	return a.logPoller.Start()

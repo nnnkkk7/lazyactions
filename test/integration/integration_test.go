@@ -145,7 +145,7 @@ func TestIntegration_MultiPaneWorkflow(t *testing.T) {
 		// 3. Navigate to logs, load and view job logs
 		ta.SendKey("l")
 		ta.App.Update(app.JobsLoadedMsg{Jobs: DefaultTestJobs()})
-		ta.App.Update(app.LogsLoadedMsg{Logs: DefaultTestLogs()})
+		ta.App.Update(app.LogsLoadedMsg{JobID: 1001, Logs: DefaultTestLogs()})
 
 		// 4. Enter fullscreen log mode
 		ta.SendKey("L")
@@ -215,7 +215,7 @@ func TestIntegration_ConcurrentOperations(t *testing.T) {
 		ta.App.Update(app.WorkflowsLoadedMsg{Workflows: DefaultTestWorkflows()})
 		ta.App.Update(app.RunsLoadedMsg{Runs: DefaultTestRuns()})
 		ta.App.Update(app.JobsLoadedMsg{Jobs: DefaultTestJobs()})
-		ta.App.Update(app.LogsLoadedMsg{Logs: DefaultTestLogs()})
+		ta.App.Update(app.LogsLoadedMsg{JobID: 1001, Logs: DefaultTestLogs()})
 
 		// Simulate another round of loads
 		ta.App.Update(app.WorkflowsLoadedMsg{Workflows: DefaultTestWorkflows()[:1]})

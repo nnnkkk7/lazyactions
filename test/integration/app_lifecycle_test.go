@@ -103,8 +103,8 @@ func TestAppLifecycle_StartupSequence(t *testing.T) {
 		// Step 3: Jobs loaded
 		ta.App.Update(app.JobsLoadedMsg{Jobs: jobs})
 
-		// Step 4: Logs loaded
-		ta.App.Update(app.LogsLoadedMsg{Logs: logs})
+		// Step 4: Logs loaded (for first job ID 1001)
+		ta.App.Update(app.LogsLoadedMsg{JobID: 1001, Logs: logs})
 
 		// Verify view renders without error
 		view := ta.App.View()
