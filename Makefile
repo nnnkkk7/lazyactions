@@ -23,7 +23,7 @@ cover:
 
 # Coverage threshold check (for CI)
 cover-check:
-	@go test -race -coverprofile=coverage.out ./... > /dev/null 2>&1
+	go test -race -coverprofile=coverage.out ./...
 	@COVERAGE=$$(go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
 	echo "Total coverage: $${COVERAGE}%"; \
 	if [ $$(echo "$${COVERAGE} < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
@@ -35,7 +35,7 @@ cover-check:
 # Coverage by package
 cover-by-pkg:
 	@echo "=== Coverage by package ==="
-	@go test -race -coverprofile=coverage.out ./... > /dev/null 2>&1
+	go test -race -coverprofile=coverage.out ./...
 	@go tool cover -func=coverage.out | grep -E '^(github.com|total:)'
 
 # Build

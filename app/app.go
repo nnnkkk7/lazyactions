@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -30,6 +31,18 @@ const (
 	LogsTab DetailTab = iota
 	InfoTab
 )
+
+// Clipboard is an interface for clipboard operations
+type Clipboard interface {
+	WriteAll(text string) error
+}
+
+// realClipboard implements Clipboard using the system clipboard
+type realClipboard struct{}
+
+func (c *realClipboard) WriteAll(text string) error {
+	return clipboard.WriteAll(text)
+}
 
 // App is the main application model
 type App struct {
@@ -71,8 +84,9 @@ type App struct {
 	flashMsg string
 
 	// Dependencies
-	client github.Client
-	keys   KeyMap
+	client    github.Client
+	clipboard Clipboard
+	keys      KeyMap
 
 	// Fullscreen log mode
 	fullscreenLog bool
@@ -96,6 +110,13 @@ func WithClient(client github.Client) Option {
 func WithRepository(repo github.Repository) Option {
 	return func(a *App) {
 		a.repo = repo
+	}
+}
+
+// WithClipboard sets the clipboard implementation
+func WithClipboard(cb Clipboard) Option {
+	return func(a *App) {
+		a.clipboard = cb
 	}
 }
 
@@ -129,6 +150,11 @@ func New(opts ...Option) *App {
 
 	for _, opt := range opts {
 		opt(a)
+	}
+
+	// Set default clipboard if not provided
+	if a.clipboard == nil {
+		a.clipboard = &realClipboard{}
 	}
 
 	if a.client != nil {
@@ -236,6 +262,22 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.err = msg.Err
 		} else {
 			a.flashMsg = "Rerun triggered"
+			cmds = append(cmds, a.refreshCurrentWorkflow())
+		}
+
+	case RerunFailedJobsMsg:
+		if msg.Err != nil {
+			a.err = msg.Err
+		} else {
+			a.flashMsg = "Rerun failed jobs triggered"
+			cmds = append(cmds, a.refreshCurrentWorkflow())
+		}
+
+	case WorkflowTriggeredMsg:
+		if msg.Err != nil {
+			a.err = msg.Err
+		} else {
+			a.flashMsg = "Workflow triggered: " + msg.Workflow
 			cmds = append(cmds, a.refreshCurrentWorkflow())
 		}
 
@@ -741,8 +783,11 @@ func (a *App) triggerWorkflow() tea.Cmd {
 // yankURL copies the selected run URL to clipboard
 func (a *App) yankURL() tea.Cmd {
 	if run, ok := a.runs.Selected(); ok && run.URL != "" {
-		// Return a flash message indicating the URL was copied
-		// Note: actual clipboard integration would require platform-specific code
+		if err := a.clipboard.WriteAll(run.URL); err != nil {
+			// Clipboard not available (e.g., headless environment)
+			// Show URL in flash message so user can copy manually
+			return flashMessage("URL: "+run.URL, 3)
+		}
 		return flashMessage("Copied: "+run.URL, 2)
 	}
 	return nil

@@ -9,11 +9,23 @@ import (
 	"github.com/nnnkkk7/lazyactions/github"
 )
 
+// MockClipboard is a mock clipboard for testing.
+type MockClipboard struct {
+	Content string
+}
+
+// WriteAll implements app.Clipboard.
+func (m *MockClipboard) WriteAll(text string) error {
+	m.Content = text
+	return nil
+}
+
 // TestApp wraps App for E2E testing with helper methods.
 type TestApp struct {
 	*app.App
-	t    *testing.T
-	mock *github.MockClient
+	t         *testing.T
+	mock      *github.MockClient
+	clipboard *MockClipboard
 }
 
 // TestOption configures a TestApp.
@@ -26,14 +38,17 @@ func NewTestApp(t *testing.T, opts ...TestOption) *TestApp {
 	mock := &github.MockClient{
 		RateLimit: 5000,
 	}
+	mockClipboard := &MockClipboard{}
 
 	ta := &TestApp{
 		App: app.New(
 			app.WithClient(mock),
 			app.WithRepository(github.Repository{Owner: "test", Name: "repo"}),
+			app.WithClipboard(mockClipboard),
 		),
-		t:    t,
-		mock: mock,
+		t:         t,
+		mock:      mock,
+		clipboard: mockClipboard,
 	}
 
 	for _, opt := range opts {

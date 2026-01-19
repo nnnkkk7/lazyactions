@@ -207,6 +207,31 @@ func TestActions_RerunFailedJobs(t *testing.T) {
 			t.Error("R on success run should return nil")
 		}
 	})
+
+	t.Run("rerun failed jobs success shows flash message", func(t *testing.T) {
+		ta := NewTestApp(t)
+		ta.SetSize(120, 40)
+
+		ta.App.Update(app.RerunFailedJobsMsg{RunID: 100, Err: nil})
+
+		view := ta.App.View()
+		if len(view) == 0 {
+			t.Error("View should render after rerun failed jobs success")
+		}
+	})
+
+	t.Run("rerun failed jobs error sets error state", func(t *testing.T) {
+		ta := NewTestApp(t)
+		ta.SetSize(120, 40)
+
+		testErr := &github.AppError{Message: "rerun failed jobs failed"}
+		ta.App.Update(app.RerunFailedJobsMsg{RunID: 100, Err: testErr})
+
+		view := ta.App.View()
+		if len(view) == 0 {
+			t.Error("View should render after rerun failed jobs error")
+		}
+	})
 }
 
 func TestActions_TriggerWorkflow(t *testing.T) {
@@ -221,6 +246,31 @@ func TestActions_TriggerWorkflow(t *testing.T) {
 
 		if cmd == nil {
 			t.Error("t should trigger workflow dispatch command")
+		}
+	})
+
+	t.Run("trigger success shows flash message", func(t *testing.T) {
+		ta := NewTestApp(t)
+		ta.SetSize(120, 40)
+
+		ta.App.Update(app.WorkflowTriggeredMsg{Workflow: "ci.yml", Err: nil})
+
+		view := ta.App.View()
+		if len(view) == 0 {
+			t.Error("View should render after trigger success")
+		}
+	})
+
+	t.Run("trigger error sets error state", func(t *testing.T) {
+		ta := NewTestApp(t)
+		ta.SetSize(120, 40)
+
+		testErr := &github.AppError{Message: "workflow dispatch failed"}
+		ta.App.Update(app.WorkflowTriggeredMsg{Workflow: "ci.yml", Err: testErr})
+
+		view := ta.App.View()
+		if len(view) == 0 {
+			t.Error("View should render after trigger error")
 		}
 	})
 
