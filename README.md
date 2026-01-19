@@ -30,23 +30,15 @@ Inspired by [lazygit](https://github.com/jesseduffield/lazygit) and [lazydocker]
 
 Tired of switching between your terminal and browser to check CI status? **lazyactions** brings GitHub Actions to your terminal with a familiar lazygit-style interface.
 
-- **Stay in flow** — No context switching to the browser
-- **Keyboard-first** — Vim-style navigation you already know
-- **Mouse support** — Click and scroll for quick navigation
-- **Real-time** — Adaptive polling keeps you updated
-- **Full control** — Trigger, cancel, and rerun workflows without leaving the terminal
-
 ## Features
 
-- **Browse Workflows** — View all workflows in your repository
-- **Monitor Runs** — See run status with real-time updates
+- **Browse & Monitor** — View workflows and runs with real-time status updates
 - **View Logs** — Stream job logs directly in the terminal
 - **Trigger Workflows** — Start `workflow_dispatch` workflows
-- **Cancel Runs** — Stop running workflows instantly
-- **Rerun Workflows** — Rerun entire workflows or just failed jobs
+- **Cancel & Rerun** — Stop running workflows or rerun failed jobs
 - **Filter** — Quickly find workflows and runs with fuzzy search
 - **Copy URLs** — Yank workflow/run URLs to clipboard
-- **Mouse Support** — Click and scroll for quick navigation
+- **Keyboard & Mouse** — Vim-style keys and mouse support for navigation
 
 ## Installation
 
