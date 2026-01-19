@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.svg" alt="lazyactions logo" width="120" height="120">
+
 # lazyactions
 
 **A lazygit-style TUI for GitHub Actions**
@@ -21,7 +23,6 @@ Monitor workflows, view logs, trigger runs, and manage GitHub Actions — all fr
 
 ---
 
-![lazyactions demo](demo.gif)
 
 ## Why lazyactions?
 
@@ -37,17 +38,15 @@ Tired of switching between your terminal and browser to check CI status? **lazya
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| **Browse Workflows** | View all workflows in your repository |
-| **Monitor Runs** | See run status with real-time updates |
-| **View Logs** | Stream job logs directly in the terminal |
-| **Trigger Workflows** | Start `workflow_dispatch` workflows |
-| **Cancel Runs** | Stop running workflows instantly |
-| **Rerun Workflows** | Rerun entire workflows or just failed jobs |
-| **Filter** | Quickly find workflows and runs with fuzzy search |
-| **Copy URLs** | Yank workflow/run URLs to clipboard |
-| **Mouse Support** | Click and scroll for quick navigation |
+- **Browse Workflows** — View all workflows in your repository
+- **Monitor Runs** — See run status with real-time updates
+- **View Logs** — Stream job logs directly in the terminal
+- **Trigger Workflows** — Start `workflow_dispatch` workflows
+- **Cancel Runs** — Stop running workflows instantly
+- **Rerun Workflows** — Rerun entire workflows or just failed jobs
+- **Filter** — Quickly find workflows and runs with fuzzy search
+- **Copy URLs** — Yank workflow/run URLs to clipboard
+- **Mouse Support** — Click and scroll for quick navigation
 
 ## Installation
 
