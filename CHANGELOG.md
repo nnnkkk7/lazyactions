@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.0.5](https://github.com/nnnkkk7/lazyactions/compare/v0.0.4...v0.0.5) - 2026-01-19
+- chore: rename workflow by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/22
+- docs: update readme and add gif by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/24
+- chore: rename workflow by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/25
+- docs: update readme and add logo by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/26
+- docs: remove project title from README by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/27
+
 ## [v0.0.4](https://github.com/nnnkkk7/lazyactions/compare/v0.0.3...v0.0.4) - 2026-01-19
 - fix: move panel position by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/18
 - feat: implement mouse event handling for scrolling and clicking by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/20
