@@ -150,10 +150,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 MIT License - see [LICENSE](LICENSE) for details.
 
----
 
-<div align="center">
+## Support
 
-**[Star this repo](https://github.com/nnnkkk7/lazyactions)** if you find it useful!
+If you find lazyactions useful, please consider giving it a star on GitHub!
+It helps others discover the project and motivates continued development.
 
-</div>
+[![Star on GitHub](https://img.shields.io/github/stars/nnnkkk7/lazyactions?style=social)](https://github.com/nnnkkk7/lazyactions)
