@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -236,6 +237,22 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.err = msg.Err
 		} else {
 			a.flashMsg = "Rerun triggered"
+			cmds = append(cmds, a.refreshCurrentWorkflow())
+		}
+
+	case RerunFailedJobsMsg:
+		if msg.Err != nil {
+			a.err = msg.Err
+		} else {
+			a.flashMsg = "Rerun failed jobs triggered"
+			cmds = append(cmds, a.refreshCurrentWorkflow())
+		}
+
+	case WorkflowTriggeredMsg:
+		if msg.Err != nil {
+			a.err = msg.Err
+		} else {
+			a.flashMsg = "Workflow triggered: " + msg.Workflow
 			cmds = append(cmds, a.refreshCurrentWorkflow())
 		}
 
@@ -741,8 +758,10 @@ func (a *App) triggerWorkflow() tea.Cmd {
 // yankURL copies the selected run URL to clipboard
 func (a *App) yankURL() tea.Cmd {
 	if run, ok := a.runs.Selected(); ok && run.URL != "" {
-		// Return a flash message indicating the URL was copied
-		// Note: actual clipboard integration would require platform-specific code
+		if err := clipboard.WriteAll(run.URL); err != nil {
+			a.err = err
+			return nil
+		}
 		return flashMessage("Copied: "+run.URL, 2)
 	}
 	return nil
