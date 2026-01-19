@@ -3,27 +3,41 @@
 # Coverage threshold
 COVERAGE_THRESHOLD := 70
 
+# Tool paths
+GOBIN ?= $(shell go env GOPATH)/bin
+GOLANGCI_LINT := $(GOBIN)/golangci-lint
+GOTESTSUM := $(GOBIN)/gotestsum
+
+# Install tools
+tools: $(GOLANGCI_LINT) $(GOTESTSUM)
+
+$(GOLANGCI_LINT):
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+
+$(GOTESTSUM):
+	go install gotest.tools/gotestsum@latest
+
 # Test (all tests)
-test:
-	go test -v -race ./...
+test: $(GOTESTSUM)
+	$(GOTESTSUM) --format testdox -- -race ./...
 
 # Unit tests only (exclude integration tests)
-test-unit:
-	go test -v -race $(shell go list ./... | grep -v /test/)
+test-unit: $(GOTESTSUM)
+	$(GOTESTSUM) --format testdox -- -race $(shell go list ./... | grep -v /test/)
 
 # Integration tests only
-test-integration:
-	go test -v -race ./test/integration/...
+test-integration: $(GOTESTSUM)
+	$(GOTESTSUM) --format testdox -- -race ./test/integration/...
 
 # Coverage measurement
-cover:
-	go test -v -race -coverprofile=coverage.out ./...
+cover: $(GOTESTSUM)
+	$(GOTESTSUM) --format testdox -- -race -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: coverage.html"
 
 # Coverage threshold check (for CI)
-cover-check:
-	go test -race -coverprofile=coverage.out ./...
+cover-check: $(GOTESTSUM)
+	$(GOTESTSUM) --format pkgname -- -race -coverprofile=coverage.out ./...
 	@COVERAGE=$$(go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
 	echo "Total coverage: $${COVERAGE}%"; \
 	if [ $$(echo "$${COVERAGE} < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
@@ -33,9 +47,9 @@ cover-check:
 	echo "OK: Coverage meets threshold"
 
 # Coverage by package
-cover-by-pkg:
+cover-by-pkg: $(GOTESTSUM)
 	@echo "=== Coverage by package ==="
-	go test -race -coverprofile=coverage.out ./...
+	$(GOTESTSUM) --format pkgname -- -race -coverprofile=coverage.out ./...
 	@go tool cover -func=coverage.out | grep -E '^(github.com|total:)'
 
 # Build
@@ -47,15 +61,7 @@ run:
 	go run ./cmd/lazyactions
 
 # Lint
-GOBIN ?= $(shell go env GOPATH)/bin
-GOLANGCI_LINT := $(GOBIN)/golangci-lint
-
-tools: $(GOLANGCI_LINT)
-
-$(GOLANGCI_LINT):
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
-
-lint: tools
+lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run
 
 # CI (lint + coverage check + build)
@@ -68,5 +74,3 @@ dev: fmt lint test
 fmt:
 	go fmt ./...
 	goimports -w .
-
-
