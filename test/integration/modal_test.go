@@ -192,15 +192,20 @@ func TestModal_EscapeHandling(t *testing.T) {
 		}
 	})
 
-	t.Run("Esc clears error if set", func(t *testing.T) {
+	t.Run("Esc clears error and triggers refresh", func(t *testing.T) {
 		ta := NewTestApp(t)
 		ta.SetSize(120, 40)
 
 		// Set an error
 		ta.App.Update(app.WorkflowsLoadedMsg{Err: ErrTest})
 
-		// Clear with Esc
-		ta.SendKey("esc")
+		// Clear with Esc - should also trigger refresh
+		cmd := ta.SendKey("esc")
+
+		// Should return a refresh command
+		if cmd == nil {
+			t.Error("Esc on error should return refresh command")
+		}
 
 		view := ta.App.View()
 		if len(view) == 0 {

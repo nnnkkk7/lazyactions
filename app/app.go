@@ -297,6 +297,7 @@ func (a *App) handleKeyPress(msg tea.KeyMsg) tea.Cmd {
 			a.fullscreenLog = false
 		} else if a.err != nil {
 			a.err = nil
+			return a.refreshAll()
 		}
 
 	case key.Matches(msg, a.keys.Up):
@@ -739,24 +740,44 @@ func (a *App) buildLogsContent(height int) []string {
 	return lines
 }
 
-// padRight pads a string to the specified width
+// padRight pads a string to the specified display width
 func padRight(s string, width int) string {
-	runes := []rune(s)
-	if len(runes) >= width {
-		return string(runes[:width])
+	currentWidth := lipgloss.Width(s)
+	if currentWidth >= width {
+		// Truncate if too long
+		return truncateToWidth(s, width)
 	}
-	return s + strings.Repeat(" ", width-len(runes))
+	return s + strings.Repeat(" ", width-currentWidth)
 }
 
 // padCenter centers a string within the specified width, filling with the given char
 func padCenter(s string, width int, fill string) string {
-	sLen := len([]rune(s))
+	sLen := lipgloss.Width(s)
 	if sLen >= width {
 		return s
 	}
 	leftPad := (width - sLen) / 2
 	rightPad := width - sLen - leftPad
 	return strings.Repeat(fill, leftPad) + s + strings.Repeat(fill, rightPad)
+}
+
+// truncateToWidth truncates a string to fit within the specified display width
+func truncateToWidth(s string, maxWidth int) string {
+	if maxWidth <= 0 {
+		return ""
+	}
+	currentWidth := 0
+	for i, r := range s {
+		charWidth := lipgloss.Width(string(r))
+		if currentWidth+charWidth > maxWidth {
+			if maxWidth >= 3 && currentWidth >= 0 {
+				return s[:i] + "..."
+			}
+			return s[:i]
+		}
+		currentWidth += charWidth
+	}
+	return s
 }
 
 func (a *App) logPaneWidth() int {
@@ -940,7 +961,7 @@ func (a *App) renderStatusBar() string {
 		return StatusBar.
 			Foreground(lipgloss.Color("#FF0000")).
 			Width(a.width).
-			Render("Error: " + a.err.Error())
+			Render("Error: " + a.err.Error() + " [Esc]retry")
 	}
 
 	return StatusBar.Width(a.width).Render(hints)
@@ -1039,19 +1060,18 @@ func formatRunNumber(id int64) string {
 	return strconv.FormatInt(id, 10)
 }
 
-// truncateString truncates a string to maxLen characters, adding "..." if truncated
+// truncateString truncates a string to maxLen display width, adding "..." if truncated
 func truncateString(s string, maxLen int) string {
 	if maxLen <= 3 {
 		return s
 	}
-	runes := []rune(s)
-	if len(runes) <= maxLen {
+	if lipgloss.Width(s) <= maxLen {
 		return s
 	}
-	return string(runes[:maxLen-3]) + "..."
+	return truncateToWidth(s, maxLen)
 }
 
-// wrapLines wraps long lines to fit within maxWidth
+// wrapLines wraps long lines to fit within maxWidth (display width)
 func wrapLines(content string, maxWidth int) string {
 	if maxWidth <= 0 {
 		maxWidth = 80
@@ -1059,17 +1079,25 @@ func wrapLines(content string, maxWidth int) string {
 	lines := strings.Split(content, "\n")
 	var result []string
 	for _, line := range lines {
-		runes := []rune(line)
-		if len(runes) <= maxWidth {
+		if lipgloss.Width(line) <= maxWidth {
 			result = append(result, line)
 		} else {
-			// Split long lines
-			for len(runes) > maxWidth {
-				result = append(result, string(runes[:maxWidth]))
-				runes = runes[maxWidth:]
+			// Split long lines by display width
+			currentLine := ""
+			currentWidth := 0
+			for _, r := range line {
+				charWidth := lipgloss.Width(string(r))
+				if currentWidth+charWidth > maxWidth {
+					result = append(result, currentLine)
+					currentLine = string(r)
+					currentWidth = charWidth
+				} else {
+					currentLine += string(r)
+					currentWidth += charWidth
+				}
 			}
-			if len(runes) > 0 {
-				result = append(result, string(runes))
+			if currentLine != "" {
+				result = append(result, currentLine)
 			}
 		}
 	}
