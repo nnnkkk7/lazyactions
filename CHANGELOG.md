@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.0.6](https://github.com/nnnkkk7/lazyactions/compare/v0.0.5...v0.0.6) - 2026-01-19
+- feat: integrate clipboard functionality for URL copying by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/28
+
 ## [v0.0.5](https://github.com/nnnkkk7/lazyactions/compare/v0.0.4...v0.0.5) - 2026-01-19
 - chore: rename workflow by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/22
 - docs: update readme and add gif by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/24
