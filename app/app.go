@@ -32,6 +32,18 @@ const (
 	InfoTab
 )
 
+// Clipboard is an interface for clipboard operations
+type Clipboard interface {
+	WriteAll(text string) error
+}
+
+// realClipboard implements Clipboard using the system clipboard
+type realClipboard struct{}
+
+func (c *realClipboard) WriteAll(text string) error {
+	return clipboard.WriteAll(text)
+}
+
 // App is the main application model
 type App struct {
 	// Data (using FilteredList pattern)
@@ -72,8 +84,9 @@ type App struct {
 	flashMsg string
 
 	// Dependencies
-	client github.Client
-	keys   KeyMap
+	client    github.Client
+	clipboard Clipboard
+	keys      KeyMap
 
 	// Fullscreen log mode
 	fullscreenLog bool
@@ -97,6 +110,13 @@ func WithClient(client github.Client) Option {
 func WithRepository(repo github.Repository) Option {
 	return func(a *App) {
 		a.repo = repo
+	}
+}
+
+// WithClipboard sets the clipboard implementation
+func WithClipboard(cb Clipboard) Option {
+	return func(a *App) {
+		a.clipboard = cb
 	}
 }
 
@@ -130,6 +150,11 @@ func New(opts ...Option) *App {
 
 	for _, opt := range opts {
 		opt(a)
+	}
+
+	// Set default clipboard if not provided
+	if a.clipboard == nil {
+		a.clipboard = &realClipboard{}
 	}
 
 	if a.client != nil {
@@ -758,9 +783,10 @@ func (a *App) triggerWorkflow() tea.Cmd {
 // yankURL copies the selected run URL to clipboard
 func (a *App) yankURL() tea.Cmd {
 	if run, ok := a.runs.Selected(); ok && run.URL != "" {
-		if err := clipboard.WriteAll(run.URL); err != nil {
-			a.err = err
-			return nil
+		if err := a.clipboard.WriteAll(run.URL); err != nil {
+			// Clipboard not available (e.g., headless environment)
+			// Show URL in flash message so user can copy manually
+			return flashMessage("URL: "+run.URL, 3)
 		}
 		return flashMessage("Copied: "+run.URL, 2)
 	}
