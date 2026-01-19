@@ -1,13 +1,64 @@
+<div align="center">
+
 # lazyactions
 
-A lazygit-style TUI for GitHub Actions. Monitor workflows, view logs, and manage runs from your terminal.
+**A lazygit-style TUI for GitHub Actions**
 
-## Prerequisites
+[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/nnnkkk7/lazyactions/actions/workflows/ci.yml/badge.svg)](https://github.com/nnnkkk7/lazyactions/actions)
 
-- Go 1.21 or later
-- GitHub CLI (`gh`) installed and authenticated, OR a GitHub token
+Monitor workflows, view logs, trigger runs, and manage GitHub Actions — all from your terminal.
+
+![lazyactions demo](assets/demo.gif)
+
+[Features](#features) • [Installation](#installation) • [Usage](#usage) • [Keybindings](#keybindings) • [Contributing](#contributing)
+
+</div>
+
+---
+
+![lazyactions demo](demo.gif)
+
+## Why lazyactions?
+
+Inspired by [lazygit](https://github.com/jesseduffield/lazygit) and [lazydocker](https://github.com/jesseduffield/lazydocker).
+
+Tired of switching between your terminal and browser to check CI status? **lazyactions** brings GitHub Actions to your terminal with a familiar lazygit-style interface.
+
+- **Stay in flow** — No context switching to the browser
+- **Keyboard-first** — Vim-style navigation you already know
+- **Mouse support** — Click and scroll for quick navigation
+- **Real-time** — Adaptive polling keeps you updated
+- **Full control** — Trigger, cancel, and rerun workflows without leaving the terminal
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Browse Workflows** | View all workflows in your repository |
+| **Monitor Runs** | See run status with real-time updates |
+| **View Logs** | Stream job logs directly in the terminal |
+| **Trigger Workflows** | Start `workflow_dispatch` workflows |
+| **Cancel Runs** | Stop running workflows instantly |
+| **Rerun Workflows** | Rerun entire workflows or just failed jobs |
+| **Filter** | Quickly find workflows and runs with fuzzy search |
+| **Copy URLs** | Yank workflow/run URLs to clipboard |
+| **Mouse Support** | Click and scroll for quick navigation |
 
 ## Installation
+
+### Homebrew
+
+```bash
+brew install nnnkkk7/tap/lazyactions
+```
+
+### Using Go
+
+```bash
+go install github.com/nnnkkk7/lazyactions/cmd/lazyactions@latest
+```
 
 ### From Source
 
@@ -15,113 +66,102 @@ A lazygit-style TUI for GitHub Actions. Monitor workflows, view logs, and manage
 git clone https://github.com/nnnkkk7/lazyactions.git
 cd lazyactions
 make build
+# Binary: ./bin/lazyactions
 ```
 
-The binary will be created at `./bin/lazyactions`.
+### Prerequisites
 
-### Go Install
-
-```bash
-go install github.com/nnnkkk7/lazyactions/cmd/lazyactions@latest
-```
+- Go 1.21+
+- GitHub CLI (`gh`) authenticated, **OR** `GITHUB_TOKEN` environment variable
 
 ## Authentication
 
-lazyactions uses the following authentication methods (in order of priority):
+**Option 1: GitHub CLI (Recommended)**
+```bash
+gh auth login
+```
 
-1. **GitHub CLI (Recommended)**: If you have `gh` installed and authenticated, no configuration needed.
-   ```bash
-   gh auth login
-   ```
-
-2. **Environment Variable**: Set `GITHUB_TOKEN` with a personal access token.
-   ```bash
-   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
-   ```
-
-   Required token scopes: `repo`, `workflow`
+**Option 2: Personal Access Token**
+```bash
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+# Required scopes: repo, workflow
+```
 
 ## Usage
 
-Navigate to any directory within a GitHub repository and run:
-
 ```bash
+# Run in any git repository
 lazyactions
-```
 
-Or specify a path:
-
-```bash
+# Or specify a path
 lazyactions /path/to/repo
 ```
 
 ## Keybindings
 
+### Navigation
+
 | Key | Action |
 |-----|--------|
-| `j` / `↓` | Move down |
-| `k` / `↑` | Move up |
-| `h` / `←` | Move to left pane |
-| `l` / `→` | Move to right pane |
-| `Tab` | Next pane |
-| `Shift+Tab` | Previous pane |
-| `Enter` | Select / Expand |
+| `j` / `k` | Move between panels |
+| `↑` / `↓` | Move up/down in list |
+| `h` / `←` | Previous pane |
+| `l` / `→` | Next pane |
+| `Tab` / `Shift+Tab` | Cycle panes |
+| `1` | Info tab |
+| `2` | Logs tab |
+
+### Actions
+
+| Key | Action |
+|-----|--------|
 | `t` | Trigger workflow |
 | `c` | Cancel run |
 | `r` | Rerun workflow |
-| `R` | Rerun failed jobs |
+| `R` | Rerun failed jobs only |
 | `y` | Copy URL to clipboard |
-| `/` | Filter |
-| `Ctrl+r` | Refresh |
-| `L` | View full log |
-| `?` | Help |
+
+### General
+
+| Key | Action |
+|-----|--------|
+| `/` | Filter mode |
+| `Ctrl+r` | Refresh all data |
+| `L` | Toggle fullscreen log |
+| `?` | Show help |
+| `Esc` | Back / Clear error |
 | `q` | Quit |
-| `Esc` | Back / Clear filter |
+
+### Mouse
+
+| Action | Description |
+|--------|-------------|
+| **Click** | Select item / Switch pane |
+| **Scroll** | Navigate lists and logs |
 
 ## Development
 
-### Build
-
 ```bash
-make build
+make build      # Build binary
+make test       # Run all tests
+make lint       # Run linter
+make ci         # Full CI check
 ```
 
-### Run Tests
 
-```bash
-make test
-```
+## Contributing
 
-### Run Tests with Coverage
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-```bash
-make cover
-```
-
-### Lint
-
-```bash
-make lint
-```
-
-### Full CI Che
-
-```bash
-make ci
-```
-
-## Project Structure
-
-```
-lazyactions/
-├── cmd/lazyactions/    # Entry point
-├── app/                # TUI application (BubbleTea)
-├── github/             # GitHub API client
-├── auth/               # Authentication (SecureToken)
-├── repo/               # Repository detection
-└── docs/               # Design documents
-```
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**[Star this repo](https://github.com/nnnkkk7/lazyactions)** if you find it useful!
+
+</div>
