@@ -2,8 +2,6 @@
 
 <img src="assets/logo.svg" alt="lazyactions logo" width="120" height="120">
 
-# lazyactions
-
 **A lazygit-style TUI for GitHub Actions**
 
 
