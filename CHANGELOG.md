@@ -4,6 +4,10 @@
 - fix: move panel position by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/18
 - feat: implement mouse event handling for scrolling and clicking by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/20
 
+## [v0.0.4](https://github.com/nnnkkk7/lazyactions/compare/v0.0.3...v0.0.4) - 2026-01-19
+- fix: move panel position by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/18
+- feat: implement mouse event handling for scrolling and clicking by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/20
+
 ## [v0.0.3](https://github.com/nnnkkk7/lazyactions/compare/v0.0.2...v0.0.3) - 2026-01-19
 - fix: enhance error handling and string display width management by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/16
 - refactor: update LogsLoadedMsg to include JobID and enhance log handling by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/17
