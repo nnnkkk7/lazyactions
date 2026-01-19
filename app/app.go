@@ -5,6 +5,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
@@ -782,15 +783,17 @@ func (a *App) triggerWorkflow() tea.Cmd {
 
 // yankURL copies the selected run URL to clipboard
 func (a *App) yankURL() tea.Cmd {
-	if run, ok := a.runs.Selected(); ok && run.URL != "" {
-		if err := a.clipboard.WriteAll(run.URL); err != nil {
-			// Clipboard not available (e.g., headless environment)
-			// Show URL in flash message so user can copy manually
-			return flashMessage("URL: "+run.URL, 3)
-		}
-		return flashMessage("Copied: "+run.URL, 2)
+	run, ok := a.runs.Selected()
+	if !ok || run.URL == "" {
+		return nil
 	}
-	return nil
+
+	if err := a.clipboard.WriteAll(run.URL); err != nil {
+		// Clipboard not available (e.g., headless environment)
+		// Show URL in flash message so user can copy manually
+		return flashMessage("URL: "+run.URL, 3*time.Second)
+	}
+	return flashMessage("Copied: "+run.URL, 2*time.Second)
 }
 
 // refreshAll refreshes all data
