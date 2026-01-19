@@ -4,9 +4,12 @@
 
 **A lazygit-style TUI for GitHub Actions**
 
-[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/nnnkkk7/lazyactions/actions/workflows/ci.yml/badge.svg)](https://github.com/nnnkkk7/lazyactions/actions)
+
+
+ [![CI](https://github.com/nnnkkk7/lazyactions/actions/workflows/ci.yaml/badge.svg)](https://github.com/nnnkkk7/lazyactions/actions/workflows/ci.yaml)
+ [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://go.dev/)
+ [![Go Report Card](https://goreportcard.com/badge/github.com/nnnkkk7/lazyactions)](https://goreportcard.com/report/github.com/nnnkkk7/lazyactions)
+ [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Monitor workflows, view logs, trigger runs, and manage GitHub Actions — all from your terminal.
 
