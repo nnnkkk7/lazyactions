@@ -8,6 +8,8 @@ type KeyMap struct {
 	Down        key.Binding
 	Left        key.Binding
 	Right       key.Binding
+	PanelUp     key.Binding
+	PanelDown   key.Binding
 	Tab         key.Binding
 	ShiftTab    key.Binding
 	Enter       key.Binding
@@ -22,26 +24,36 @@ type KeyMap struct {
 	Help        key.Binding
 	Quit        key.Binding
 	Escape      key.Binding
+	InfoTab     key.Binding
+	LogsTab     key.Binding
 }
 
 // DefaultKeyMap returns the default keybindings
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
 		Up: key.NewBinding(
-			key.WithKeys("k", "up"),
-			key.WithHelp("k/↑", "move up"),
+			key.WithKeys("up"),
+			key.WithHelp("↑", "move up in list"),
 		),
 		Down: key.NewBinding(
-			key.WithKeys("j", "down"),
-			key.WithHelp("j/↓", "move down"),
+			key.WithKeys("down"),
+			key.WithHelp("↓", "move down in list"),
 		),
 		Left: key.NewBinding(
 			key.WithKeys("h", "left"),
-			key.WithHelp("h/←", "previous pane"),
+			key.WithHelp("h/←", "detail view"),
 		),
 		Right: key.NewBinding(
 			key.WithKeys("l", "right"),
-			key.WithHelp("l/→", "next pane"),
+			key.WithHelp("l/→", "detail view"),
+		),
+		PanelUp: key.NewBinding(
+			key.WithKeys("k"),
+			key.WithHelp("k", "previous panel"),
+		),
+		PanelDown: key.NewBinding(
+			key.WithKeys("j"),
+			key.WithHelp("j", "next panel"),
 		),
 		Tab: key.NewBinding(
 			key.WithKeys("tab"),
@@ -98,6 +110,14 @@ func DefaultKeyMap() KeyMap {
 		Escape: key.NewBinding(
 			key.WithKeys("esc"),
 			key.WithHelp("esc", "back/cancel"),
+		),
+		InfoTab: key.NewBinding(
+			key.WithKeys("1"),
+			key.WithHelp("1", "info tab"),
+		),
+		LogsTab: key.NewBinding(
+			key.WithKeys("2"),
+			key.WithHelp("2", "logs tab"),
 		),
 	}
 }

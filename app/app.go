@@ -20,7 +20,15 @@ type Pane int
 const (
 	WorkflowsPane Pane = iota
 	RunsPane
-	LogsPane
+	JobsPane
+)
+
+// DetailTab represents the tab in the detail view
+type DetailTab int
+
+const (
+	LogsTab DetailTab = iota
+	InfoTab
 )
 
 // App is the main application model
@@ -33,6 +41,7 @@ type App struct {
 
 	// UI state
 	focusedPane Pane
+	detailTab   DetailTab
 	width       int
 	height      int
 	logView     *LogViewport
@@ -250,24 +259,69 @@ func (a *App) View() string {
 		return a.renderConfirmDialog()
 	}
 
-	// Calculate pane dimensions
-	paneHeight := a.height - 2 // status bar
-	if paneHeight < 5 {
-		paneHeight = 5
+	// Calculate dimensions
+	totalHeight := a.height - 1 // status bar
+	if totalHeight < 10 {
+		totalHeight = 10
 	}
 
-	// Build each pane as fixed-size string array
-	wfLines := a.buildWorkflowsContent(paneHeight)
-	runLines := a.buildRunsContent(paneHeight)
-	logLines := a.buildLogsContent(paneHeight)
+	// Left sidebar (30%), Right detail (70%)
+	leftWidth := int(float64(a.width) * 0.30)
+	if leftWidth < 20 {
+		leftWidth = 20
+	}
+	rightWidth := a.width - leftWidth
 
-	// Join panes horizontally, line by line
+	// Left panels: 3 equal-height panels
+	panelHeight := totalHeight / 3
+	if panelHeight < 5 {
+		panelHeight = 5
+	}
+
+	// Build left sidebar panels
+	wfLines := a.buildWorkflowsPanel(leftWidth, panelHeight)
+	runLines := a.buildRunsPanel(leftWidth, panelHeight)
+	jobLines := a.buildJobsPanel(leftWidth, totalHeight-2*panelHeight) // remaining height
+
+	// Build right detail view
+	detailLines := a.buildDetailPanel(rightWidth, totalHeight)
+
+	// Combine: left sidebar + right detail, line by line
 	var output strings.Builder
-	for i := 0; i < paneHeight; i++ {
-		output.WriteString(wfLines[i])
-		output.WriteString(runLines[i])
-		output.WriteString(logLines[i])
+	leftIdx := 0
+
+	// Workflows panel
+	for i := 0; i < panelHeight && leftIdx < totalHeight; i++ {
+		line := wfLines[i]
+		if leftIdx < len(detailLines) {
+			line += detailLines[leftIdx]
+		}
+		output.WriteString(line)
 		output.WriteString("\n")
+		leftIdx++
+	}
+
+	// Runs panel
+	for i := 0; i < panelHeight && leftIdx < totalHeight; i++ {
+		line := runLines[i]
+		if leftIdx < len(detailLines) {
+			line += detailLines[leftIdx]
+		}
+		output.WriteString(line)
+		output.WriteString("\n")
+		leftIdx++
+	}
+
+	// Jobs panel (remaining height)
+	jobHeight := totalHeight - 2*panelHeight
+	for i := 0; i < jobHeight && leftIdx < totalHeight; i++ {
+		line := jobLines[i]
+		if leftIdx < len(detailLines) {
+			line += detailLines[leftIdx]
+		}
+		output.WriteString(line)
+		output.WriteString("\n")
+		leftIdx++
 	}
 
 	// Add status bar
@@ -311,6 +365,12 @@ func (a *App) handleKeyPress(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, a.keys.Down):
 		return a.navigateDown()
 
+	case key.Matches(msg, a.keys.PanelUp):
+		return a.focusPrevPaneWithSelect()
+
+	case key.Matches(msg, a.keys.PanelDown):
+		return a.focusNextPaneWithSelect()
+
 	case key.Matches(msg, a.keys.Left), key.Matches(msg, a.keys.ShiftTab):
 		a.focusPrevPane()
 
@@ -322,7 +382,7 @@ func (a *App) handleKeyPress(msg tea.KeyMsg) tea.Cmd {
 		a.filterInput.Focus()
 
 	case key.Matches(msg, a.keys.FullLog):
-		if a.focusedPane == LogsPane {
+		if a.focusedPane == JobsPane {
 			a.fullscreenLog = true
 		}
 
@@ -351,6 +411,12 @@ func (a *App) handleKeyPress(msg tea.KeyMsg) tea.Cmd {
 
 	case key.Matches(msg, a.keys.Refresh):
 		return a.refreshAll()
+
+	case key.Matches(msg, a.keys.InfoTab):
+		a.detailTab = InfoTab
+
+	case key.Matches(msg, a.keys.LogsTab):
+		a.detailTab = LogsTab
 	}
 
 	return nil
@@ -397,7 +463,7 @@ func (a *App) applyFilter(filter string) {
 		a.workflows.SetFilter(filter)
 	case RunsPane:
 		a.runs.SetFilter(filter)
-	case LogsPane:
+	case JobsPane:
 		a.jobs.SetFilter(filter)
 	}
 }
@@ -411,7 +477,7 @@ func (a *App) navigateUp() tea.Cmd {
 	case RunsPane:
 		a.runs.SelectPrev()
 		return a.onRunSelectionChange()
-	case LogsPane:
+	case JobsPane:
 		a.jobs.SelectPrev()
 		return a.onJobSelectionChange()
 	}
@@ -427,7 +493,7 @@ func (a *App) navigateDown() tea.Cmd {
 	case RunsPane:
 		a.runs.SelectNext()
 		return a.onRunSelectionChange()
-	case LogsPane:
+	case JobsPane:
 		a.jobs.SelectNext()
 		return a.onJobSelectionChange()
 	}
@@ -439,7 +505,7 @@ func (a *App) focusPrevPane() {
 	switch a.focusedPane {
 	case RunsPane:
 		a.focusedPane = WorkflowsPane
-	case LogsPane:
+	case JobsPane:
 		a.focusedPane = RunsPane
 	}
 }
@@ -450,8 +516,34 @@ func (a *App) focusNextPane() {
 	case WorkflowsPane:
 		a.focusedPane = RunsPane
 	case RunsPane:
-		a.focusedPane = LogsPane
+		a.focusedPane = JobsPane
 	}
+}
+
+// focusPrevPaneWithSelect moves to previous panel and triggers data loading
+func (a *App) focusPrevPaneWithSelect() tea.Cmd {
+	switch a.focusedPane {
+	case RunsPane:
+		a.focusedPane = WorkflowsPane
+		return a.onWorkflowSelectionChange()
+	case JobsPane:
+		a.focusedPane = RunsPane
+		return a.onRunSelectionChange()
+	}
+	return nil
+}
+
+// focusNextPaneWithSelect moves to next panel and triggers data loading
+func (a *App) focusNextPaneWithSelect() tea.Cmd {
+	switch a.focusedPane {
+	case WorkflowsPane:
+		a.focusedPane = RunsPane
+		return a.onRunSelectionChange()
+	case RunsPane:
+		a.focusedPane = JobsPane
+		return a.onJobSelectionChange()
+	}
+	return nil
 }
 
 // onWorkflowSelectionChange handles workflow selection change
@@ -583,26 +675,26 @@ func (a *App) fetchLogsCmd(jobID int64) tea.Cmd {
 	return fetchLogs(a.client, a.repo, jobID)
 }
 
-// Rendering helpers - build fixed-size content for each pane
+// Rendering helpers - build panels for lazygit-style layout
 
-func (a *App) buildWorkflowsContent(height int) []string {
-	w := a.workflowsPaneWidth()
+// buildWorkflowsPanel builds the workflows panel for the left sidebar
+func (a *App) buildWorkflowsPanel(width, height int) []string {
+	if height < 2 {
+		return []string{}
+	}
 	lines := make([]string, height)
 
-	// Border color
 	borderColor := UnfocusedColor
 	if a.focusedPane == WorkflowsPane {
 		borderColor = FocusedColor
 	}
 	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
 
-	// Title
 	title := " Workflows "
 	if a.loading {
 		title = " Workflows " + a.spinner.View() + " "
 	}
 
-	// Build content lines
 	var content []string
 	items := a.workflows.Items()
 	if len(items) == 0 {
@@ -614,19 +706,16 @@ func (a *App) buildWorkflowsContent(height int) []string {
 	} else {
 		for i, wf := range items {
 			selected := i == a.workflows.SelectedIndex()
-			name := truncateString(wf.Name, w-6)
+			name := truncateString(wf.Name, width-6)
 			if selected {
-				content = append(content, "> "+name)
+				content = append(content, SelectedItem.Render("> "+name))
 			} else {
 				content = append(content, "  "+name)
 			}
 		}
 	}
-	content = append(content, "")
-	content = append(content, ScrollPosition(a.workflows.SelectedIndex(), a.workflows.Len()))
 
-	// Build lines with borders
-	innerWidth := w - 2
+	innerWidth := width - 2
 	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
@@ -643,8 +732,11 @@ func (a *App) buildWorkflowsContent(height int) []string {
 	return lines
 }
 
-func (a *App) buildRunsContent(height int) []string {
-	w := a.runsPaneWidth()
+// buildRunsPanel builds the runs panel for the left sidebar
+func (a *App) buildRunsPanel(width, height int) []string {
+	if height < 2 {
+		return []string{}
+	}
 	lines := make([]string, height)
 
 	borderColor := UnfocusedColor
@@ -664,18 +756,16 @@ func (a *App) buildRunsContent(height int) []string {
 			selected := i == a.runs.SelectedIndex()
 			icon := StatusIcon(run.Status, run.Conclusion)
 			line := icon + " #" + formatRunNumber(run.ID) + " " + run.Branch
-			line = truncateString(line, w-6)
+			line = truncateString(line, width-6)
 			if selected {
-				content = append(content, "> "+line)
+				content = append(content, SelectedItem.Render("> "+line))
 			} else {
 				content = append(content, "  "+line)
 			}
 		}
 	}
-	content = append(content, "")
-	content = append(content, ScrollPosition(a.runs.SelectedIndex(), a.runs.Len()))
 
-	innerWidth := w - 2
+	innerWidth := width - 2
 	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
@@ -692,20 +782,22 @@ func (a *App) buildRunsContent(height int) []string {
 	return lines
 }
 
-func (a *App) buildLogsContent(height int) []string {
-	w := a.logPaneWidth()
+// buildJobsPanel builds the jobs panel for the left sidebar
+func (a *App) buildJobsPanel(width, height int) []string {
+	if height < 2 {
+		return []string{}
+	}
 	lines := make([]string, height)
 
 	borderColor := UnfocusedColor
-	if a.focusedPane == LogsPane {
+	if a.focusedPane == JobsPane {
 		borderColor = FocusedColor
 	}
 	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
 
-	title := " Logs "
+	title := " Jobs "
 
 	var content []string
-	// Show jobs
 	items := a.jobs.Items()
 	if len(items) == 0 {
 		content = append(content, "  Select a run")
@@ -713,24 +805,16 @@ func (a *App) buildLogsContent(height int) []string {
 		for i, job := range items {
 			selected := i == a.jobs.SelectedIndex()
 			icon := StatusIcon(job.Status, job.Conclusion)
-			line := icon + " " + truncateString(job.Name, w-10)
+			line := icon + " " + truncateString(job.Name, width-10)
 			if selected {
-				content = append(content, "> "+line)
+				content = append(content, SelectedItem.Render("> "+line))
 			} else {
 				content = append(content, "  "+line)
 			}
 		}
 	}
 
-	// Add log content (viewport)
-	content = append(content, "─────")
-	logContent := a.logView.View()
-	logLines := strings.Split(logContent, "\n")
-	for _, l := range logLines {
-		content = append(content, truncateString(l, w-4))
-	}
-
-	innerWidth := w - 2
+	innerWidth := width - 2
 	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
@@ -745,6 +829,137 @@ func (a *App) buildLogsContent(height int) []string {
 	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
 
 	return lines
+}
+
+// buildDetailPanel builds the detail view panel (right side) with tabs
+func (a *App) buildDetailPanel(width, height int) []string {
+	if height < 2 {
+		return []string{}
+	}
+	lines := make([]string, height)
+
+	borderColor := UnfocusedColor
+	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
+
+	// Tab header
+	infoTab := " Info "
+	logsTab := " Logs "
+	if a.detailTab == InfoTab {
+		infoTab = FocusedTitle.Render(" Info ")
+	} else {
+		logsTab = FocusedTitle.Render(" Logs ")
+	}
+	tabHeader := " [1]" + infoTab + " [2]" + logsTab + " "
+
+	var content []string
+
+	if a.detailTab == InfoTab {
+		content = a.buildInfoContent(width - 4)
+	} else {
+		content = a.buildLogsContent(width - 4)
+	}
+
+	innerWidth := width - 2
+	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(tabHeader, innerWidth, "─")) + borderStyle.Render("┐")
+	for i := 1; i < height-1; i++ {
+		contentIdx := i - 1
+		var line string
+		if contentIdx < len(content) {
+			line = padRight(content[contentIdx], innerWidth)
+		} else {
+			line = strings.Repeat(" ", innerWidth)
+		}
+		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+	}
+	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+
+	return lines
+}
+
+// buildInfoContent builds the content for the Info tab
+func (a *App) buildInfoContent(maxWidth int) []string {
+	var content []string
+
+	switch a.focusedPane {
+	case WorkflowsPane:
+		if wf, ok := a.workflows.Selected(); ok {
+			content = append(content, "  Workflow Information")
+			content = append(content, "  "+strings.Repeat("─", 30))
+			content = append(content, "  Name:  "+wf.Name)
+			content = append(content, "  Path:  "+wf.Path)
+			content = append(content, "  State: "+wf.State)
+		} else {
+			content = append(content, "  Select a workflow")
+		}
+
+	case RunsPane:
+		if run, ok := a.runs.Selected(); ok {
+			content = append(content, "  Run Information")
+			content = append(content, "  "+strings.Repeat("─", 30))
+			content = append(content, "  ID:     #"+formatRunNumber(run.ID))
+			content = append(content, "  Status: "+StatusIcon(run.Status, run.Conclusion)+" "+run.Status)
+			if run.Conclusion != "" {
+				content = append(content, "  Result: "+run.Conclusion)
+			}
+			content = append(content, "  Branch: "+run.Branch)
+			content = append(content, "  Event:  "+run.Event)
+			content = append(content, "  Actor:  "+run.Actor)
+			if !run.CreatedAt.IsZero() {
+				content = append(content, "  Created: "+run.CreatedAt.Format("2006-01-02 15:04:05"))
+			}
+			if run.URL != "" {
+				content = append(content, "")
+				content = append(content, "  URL: "+truncateString(run.URL, maxWidth-6))
+			}
+		} else {
+			content = append(content, "  Select a run")
+		}
+
+	case JobsPane:
+		if job, ok := a.jobs.Selected(); ok {
+			content = append(content, "  Job Information")
+			content = append(content, "  "+strings.Repeat("─", 30))
+			content = append(content, "  Name:   "+job.Name)
+			content = append(content, "  Status: "+StatusIcon(job.Status, job.Conclusion)+" "+job.Status)
+			if job.Conclusion != "" {
+				content = append(content, "  Result: "+job.Conclusion)
+			}
+			if len(job.Steps) > 0 {
+				content = append(content, "")
+				content = append(content, "  Steps:")
+				for _, step := range job.Steps {
+					icon := StatusIcon(step.Status, step.Conclusion)
+					content = append(content, "    "+icon+" "+truncateString(step.Name, maxWidth-10))
+				}
+			}
+		} else {
+			content = append(content, "  Select a job")
+		}
+	}
+
+	return content
+}
+
+// buildLogsContentForDetail builds the content for the Logs tab
+func (a *App) buildLogsContent(maxWidth int) []string {
+	var content []string
+
+	if job, ok := a.jobs.Selected(); ok {
+		content = append(content, "  Logs: "+job.Name)
+		content = append(content, "  "+strings.Repeat("─", 30))
+	}
+
+	logContent := a.logView.View()
+	logLines := strings.Split(logContent, "\n")
+	for _, l := range logLines {
+		content = append(content, "  "+truncateString(l, maxWidth-4))
+	}
+
+	if len(content) == 0 {
+		content = append(content, "  No logs available")
+	}
+
+	return content
 }
 
 // padRight pads a string to the specified display width
@@ -826,135 +1041,28 @@ func (a *App) paneHeight() int {
 	return h
 }
 
-func (a *App) renderWorkflowsPane() string {
-	style := UnfocusedPane
-	titleStyle := UnfocusedTitle
-	if a.focusedPane == WorkflowsPane {
-		style = FocusedPane
-		titleStyle = FocusedTitle
-	}
-
-	w := a.workflowsPaneWidth()
-	contentWidth := w - 2 // account for border
-
-	title := titleStyle.Render(" Workflows ")
-	if a.loading {
-		title = titleStyle.Render(" Workflows " + a.spinner.View() + " ")
-	}
-
-	var lines []string
-	lines = append(lines, title)
-
-	items := a.workflows.Items()
-	if len(items) == 0 {
-		if a.loading {
-			lines = append(lines, "  Loading...")
-		} else {
-			lines = append(lines, "  No workflows")
-		}
-	} else {
-		for i, wf := range items {
-			selected := i == a.workflows.SelectedIndex()
-			name := truncateString(wf.Name, contentWidth-4)
-			lines = append(lines, RenderItem(name, selected))
-		}
-	}
-
-	lines = append(lines, "")
-	lines = append(lines, ScrollPosition(a.workflows.SelectedIndex(), a.workflows.Len()))
-
-	return style.
-		Width(w).
-		Height(a.paneHeight()).
-		Render(strings.Join(lines, "\n"))
-}
-
-func (a *App) renderRunsPane() string {
-	style := UnfocusedPane
-	titleStyle := UnfocusedTitle
-	if a.focusedPane == RunsPane {
-		style = FocusedPane
-		titleStyle = FocusedTitle
-	}
-
-	w := a.runsPaneWidth()
-	contentWidth := w - 2 // account for border
-
-	title := titleStyle.Render(" Runs ")
-
-	var lines []string
-	lines = append(lines, title)
-
-	items := a.runs.Items()
-	if len(items) == 0 {
-		lines = append(lines, "  Select a workflow")
-	} else {
-		for i, run := range items {
-			selected := i == a.runs.SelectedIndex()
-			icon := StatusIcon(run.Status, run.Conclusion)
-			line := icon + " #" + formatRunNumber(run.ID) + " " + run.Branch
-			line = truncateString(line, contentWidth-4)
-			lines = append(lines, RenderItem(line, selected))
-		}
-	}
-
-	lines = append(lines, "")
-	lines = append(lines, ScrollPosition(a.runs.SelectedIndex(), a.runs.Len()))
-
-	return style.
-		Width(w).
-		Height(a.paneHeight()).
-		Render(strings.Join(lines, "\n"))
-}
-
-func (a *App) renderLogsPane() string {
-	style := UnfocusedPane
-	titleStyle := UnfocusedTitle
-	if a.focusedPane == LogsPane {
-		style = FocusedPane
-		titleStyle = FocusedTitle
-	}
-
-	w := a.logPaneWidth()
-	contentWidth := w - 2 // account for border
-
-	title := titleStyle.Render(" Logs ")
-
-	var lines []string
-	lines = append(lines, title)
-
-	// Show job list
-	items := a.jobs.Items()
-	if len(items) == 0 {
-		lines = append(lines, "  Select a run")
-	} else {
-		for i, job := range items {
-			selected := i == a.jobs.SelectedIndex()
-			icon := StatusIcon(job.Status, job.Conclusion)
-			line := icon + " " + truncateString(job.Name, contentWidth-6)
-			lines = append(lines, RenderItem(line, selected))
-		}
-	}
-
-	lines = append(lines, "")
-	lines = append(lines, a.logView.View())
-
-	return style.
-		Width(w).
-		Height(a.paneHeight()).
-		Render(strings.Join(lines, "\n"))
-}
-
 func (a *App) renderStatusBar() string {
-	var hints string
+	// Navigation hints
+	navHints := "[j/k]panel [↑/↓]list"
+
+	// Pane-specific action hints
+	var actionHints string
 	switch a.focusedPane {
 	case WorkflowsPane:
-		hints = "[t]rigger [/]filter [?]help [q]uit"
+		actionHints = "[t]rigger [/]filter"
 	case RunsPane:
-		hints = "[c]ancel [r]erun [R]erun-failed [y]ank [?]help [q]uit"
-	case LogsPane:
-		hints = "[L]fullscreen [y]ank [Esc]back [?]help [q]uit"
+		actionHints = "[c]ancel [r]erun [R]erun-failed [y]ank"
+	case JobsPane:
+		actionHints = "[L]fullscreen [y]ank"
 	}
+
+	// Tab hints
+	tabHints := "[1]info [2]logs"
+
+	// Common hints
+	commonHints := "[?]help [q]uit"
+
+	hints := navHints + " " + actionHints + " " + tabHints + " " + commonHints
 
 	if a.filtering {
 		return StatusBar.Width(a.width).Render("Filter: " + a.filterInput.View())
@@ -990,10 +1098,11 @@ func (a *App) renderFullscreenLog() string {
 
 func (a *App) renderHelp() string {
 	help := `
-Navigation
+Panel Navigation
 ──────────────────────────────────
-j/↓         Move down
-k/↑         Move up
+j           Next panel (down)
+k           Previous panel (up)
+↓/↑         Move in list (down/up)
 h/←         Previous pane
 l/→         Next pane
 Tab         Next pane
@@ -1006,6 +1115,11 @@ c           Cancel run
 r           Rerun workflow
 R           Rerun failed jobs only
 y           Copy URL to clipboard
+
+Detail View
+──────────────────────────────────
+1           Info tab
+2           Logs tab
 
 View
 ──────────────────────────────────

@@ -15,19 +15,19 @@ func TestNavigation_PaneSwitching(t *testing.T) {
 	}{
 		// Tab navigation
 		{"Tab from Workflows to Runs", app.WorkflowsPane, "tab", app.RunsPane},
-		{"Tab from Runs to Logs", app.RunsPane, "tab", app.LogsPane},
-		{"Tab at Logs stays at Logs", app.LogsPane, "tab", app.LogsPane},
+		{"Tab from Runs to Logs", app.RunsPane, "tab", app.JobsPane},
+		{"Tab at Logs stays at Logs", app.JobsPane, "tab", app.JobsPane},
 
 		// Shift+Tab navigation
-		{"ShiftTab from Logs to Runs", app.LogsPane, "shift+tab", app.RunsPane},
+		{"ShiftTab from Logs to Runs", app.JobsPane, "shift+tab", app.RunsPane},
 		{"ShiftTab from Runs to Workflows", app.RunsPane, "shift+tab", app.WorkflowsPane},
 		{"ShiftTab at Workflows stays", app.WorkflowsPane, "shift+tab", app.WorkflowsPane},
 
 		// Vim-style navigation
 		{"l from Workflows to Runs", app.WorkflowsPane, "l", app.RunsPane},
-		{"l from Runs to Logs", app.RunsPane, "l", app.LogsPane},
-		{"l at Logs stays at Logs", app.LogsPane, "l", app.LogsPane},
-		{"h from Logs to Runs", app.LogsPane, "h", app.RunsPane},
+		{"l from Runs to Logs", app.RunsPane, "l", app.JobsPane},
+		{"l at Logs stays at Logs", app.JobsPane, "l", app.JobsPane},
+		{"h from Logs to Runs", app.JobsPane, "h", app.RunsPane},
 		{"h from Runs to Workflows", app.RunsPane, "h", app.WorkflowsPane},
 		{"h at Workflows stays", app.WorkflowsPane, "h", app.WorkflowsPane},
 
@@ -45,7 +45,7 @@ func TestNavigation_PaneSwitching(t *testing.T) {
 			switch tt.startPane {
 			case app.RunsPane:
 				ta.SendKey("l") // Move from Workflows to Runs
-			case app.LogsPane:
+			case app.JobsPane:
 				ta.SendKey("l")
 				ta.SendKey("l") // Move from Workflows to Logs
 			}
@@ -217,8 +217,8 @@ func TestNavigation_SelectionTriggersDataLoad(t *testing.T) {
 		ta.SetSize(120, 40)
 		ta.App.Update(app.WorkflowsLoadedMsg{Workflows: DefaultTestWorkflows()})
 
-		// Navigate to trigger selection change
-		cmd := ta.SendKey("j")
+		// Navigate within list to trigger selection change (use arrow key)
+		cmd := ta.SendKey("down")
 
 		// Command should be returned for fetching runs
 		if cmd == nil {
@@ -236,9 +236,9 @@ func TestNavigation_SelectionTriggersDataLoad(t *testing.T) {
 		ta.App.Update(app.WorkflowsLoadedMsg{Workflows: DefaultTestWorkflows()})
 		ta.App.Update(app.RunsLoadedMsg{Runs: DefaultTestRuns()})
 
-		// Move to Runs pane and navigate
-		ta.SendKey("l")
-		cmd := ta.SendKey("j")
+		// Move to Runs pane using j (panel navigation) and navigate in list with arrow
+		ta.SendKey("j")
+		cmd := ta.SendKey("down")
 
 		if cmd == nil {
 			t.Error("Selection change should trigger a command")
@@ -257,10 +257,10 @@ func TestNavigation_SelectionTriggersDataLoad(t *testing.T) {
 		ta.App.Update(app.RunsLoadedMsg{Runs: DefaultTestRuns()})
 		ta.App.Update(app.JobsLoadedMsg{Jobs: DefaultTestJobs()})
 
-		// Move to Logs pane and navigate
-		ta.SendKey("l")
-		ta.SendKey("l")
-		cmd := ta.SendKey("j")
+		// Move to Jobs pane using j (panel navigation) and navigate in list with arrow
+		ta.SendKey("j")
+		ta.SendKey("j")
+		cmd := ta.SendKey("down")
 
 		if cmd == nil {
 			t.Error("Selection change should trigger a command")

@@ -36,10 +36,12 @@ func TestDefaultKeyMap_NavigationKeys(t *testing.T) {
 		binding  key.Binding
 		wantKeys []string
 	}{
-		{"Up", km.Up, []string{"k", "up"}},
-		{"Down", km.Down, []string{"j", "down"}},
+		{"Up", km.Up, []string{"up"}},
+		{"Down", km.Down, []string{"down"}},
 		{"Left", km.Left, []string{"h", "left"}},
 		{"Right", km.Right, []string{"l", "right"}},
+		{"PanelUp", km.PanelUp, []string{"k"}},
+		{"PanelDown", km.PanelDown, []string{"j"}},
 		{"Tab", km.Tab, []string{"tab"}},
 		{"ShiftTab", km.ShiftTab, []string{"shift+tab"}},
 	}
@@ -111,10 +113,12 @@ func TestDefaultKeyMap_HelpText(t *testing.T) {
 		wantKey  string
 		wantDesc string
 	}{
-		{"Up", km.Up, "k/↑", "move up"},
-		{"Down", km.Down, "j/↓", "move down"},
-		{"Left", km.Left, "h/←", "previous pane"},
-		{"Right", km.Right, "l/→", "next pane"},
+		{"Up", km.Up, "↑", "move up in list"},
+		{"Down", km.Down, "↓", "move down in list"},
+		{"Left", km.Left, "h/←", "detail view"},
+		{"Right", km.Right, "l/→", "detail view"},
+		{"PanelUp", km.PanelUp, "k", "previous panel"},
+		{"PanelDown", km.PanelDown, "j", "next panel"},
 		{"Tab", km.Tab, "tab", "next pane"},
 		{"ShiftTab", km.ShiftTab, "shift+tab", "previous pane"},
 		{"Enter", km.Enter, "enter", "select/confirm"},
@@ -155,6 +159,8 @@ func TestDefaultKeyMap_AllBindingsEnabled(t *testing.T) {
 		{"Down", km.Down},
 		{"Left", km.Left},
 		{"Right", km.Right},
+		{"PanelUp", km.PanelUp},
+		{"PanelDown", km.PanelDown},
 		{"Tab", km.Tab},
 		{"ShiftTab", km.ShiftTab},
 		{"Enter", km.Enter},
@@ -227,10 +233,10 @@ func TestDefaultKeyMap_KeyMapMatches(t *testing.T) {
 		binding key.Binding
 		testKey string
 	}{
-		{"Up_k", km.Up, "k"},
 		{"Up_up", km.Up, "up"},
-		{"Down_j", km.Down, "j"},
 		{"Down_down", km.Down, "down"},
+		{"PanelUp_k", km.PanelUp, "k"},
+		{"PanelDown_j", km.PanelDown, "j"},
 		{"Left_h", km.Left, "h"},
 		{"Left_left", km.Left, "left"},
 		{"Right_l", km.Right, "l"},
@@ -282,6 +288,8 @@ func TestKeyMapStruct_AllFieldsDefined(t *testing.T) {
 	_ = km.Down
 	_ = km.Left
 	_ = km.Right
+	_ = km.PanelUp
+	_ = km.PanelDown
 	_ = km.Tab
 	_ = km.ShiftTab
 	_ = km.Enter

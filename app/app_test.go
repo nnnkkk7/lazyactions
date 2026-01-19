@@ -277,16 +277,16 @@ func TestApp_HandleKeyPress_Navigation(t *testing.T) {
 		{ID: 2, Name: "Deploy"},
 	})
 
-	// Navigate down
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}}
+	// Navigate down with arrow key
+	msg := tea.KeyMsg{Type: tea.KeyDown}
 	app.handleKeyPress(msg)
 
 	if app.workflows.SelectedIndex() != 1 {
 		t.Errorf("SelectedIndex = %d, want 1", app.workflows.SelectedIndex())
 	}
 
-	// Navigate up
-	msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}}
+	// Navigate up with arrow key
+	msg = tea.KeyMsg{Type: tea.KeyUp}
 	app.handleKeyPress(msg)
 
 	if app.workflows.SelectedIndex() != 0 {
@@ -305,11 +305,11 @@ func TestApp_HandleKeyPress_PaneNavigation(t *testing.T) {
 		t.Errorf("focusedPane = %v, want RunsPane", app.focusedPane)
 	}
 
-	// Move right to LogsPane
+	// Move right to JobsPane
 	app.handleKeyPress(msg)
 
-	if app.focusedPane != LogsPane {
-		t.Errorf("focusedPane = %v, want LogsPane", app.focusedPane)
+	if app.focusedPane != JobsPane {
+		t.Errorf("focusedPane = %v, want JobsPane", app.focusedPane)
 	}
 
 	// Move left back to RunsPane
@@ -318,6 +318,59 @@ func TestApp_HandleKeyPress_PaneNavigation(t *testing.T) {
 
 	if app.focusedPane != RunsPane {
 		t.Errorf("focusedPane = %v, want RunsPane", app.focusedPane)
+	}
+}
+
+func TestApp_HandleKeyPress_PanelNavigation_JK(t *testing.T) {
+	app := New()
+
+	// Initial state: WorkflowsPane
+	if app.focusedPane != WorkflowsPane {
+		t.Errorf("Initial focusedPane = %v, want WorkflowsPane", app.focusedPane)
+	}
+
+	// j moves to next pane (RunsPane)
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}}
+	app.handleKeyPress(msg)
+
+	if app.focusedPane != RunsPane {
+		t.Errorf("After j: focusedPane = %v, want RunsPane", app.focusedPane)
+	}
+
+	// j moves to next pane (JobsPane)
+	app.handleKeyPress(msg)
+
+	if app.focusedPane != JobsPane {
+		t.Errorf("After second j: focusedPane = %v, want JobsPane", app.focusedPane)
+	}
+
+	// j at JobsPane stays at JobsPane
+	app.handleKeyPress(msg)
+
+	if app.focusedPane != JobsPane {
+		t.Errorf("After third j: focusedPane = %v, want JobsPane", app.focusedPane)
+	}
+
+	// k moves to previous pane (RunsPane)
+	msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}}
+	app.handleKeyPress(msg)
+
+	if app.focusedPane != RunsPane {
+		t.Errorf("After k: focusedPane = %v, want RunsPane", app.focusedPane)
+	}
+
+	// k moves to previous pane (WorkflowsPane)
+	app.handleKeyPress(msg)
+
+	if app.focusedPane != WorkflowsPane {
+		t.Errorf("After second k: focusedPane = %v, want WorkflowsPane", app.focusedPane)
+	}
+
+	// k at WorkflowsPane stays at WorkflowsPane
+	app.handleKeyPress(msg)
+
+	if app.focusedPane != WorkflowsPane {
+		t.Errorf("After third k: focusedPane = %v, want WorkflowsPane", app.focusedPane)
 	}
 }
 
@@ -334,13 +387,38 @@ func TestApp_HandleKeyPress_Filter(t *testing.T) {
 
 func TestApp_HandleKeyPress_FullLog(t *testing.T) {
 	app := New()
-	app.focusedPane = LogsPane
+	app.focusedPane = JobsPane
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'L'}}
 	app.handleKeyPress(msg)
 
 	if !app.fullscreenLog {
-		t.Error("L key in LogsPane should enable fullscreenLog")
+		t.Error("L key in JobsPane should enable fullscreenLog")
+	}
+}
+
+func TestApp_HandleKeyPress_DetailTabSwitch(t *testing.T) {
+	app := New()
+
+	// Default should be LogsTab
+	if app.detailTab != LogsTab {
+		t.Errorf("Initial detailTab = %v, want LogsTab", app.detailTab)
+	}
+
+	// Press 1 to switch to InfoTab
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}}
+	app.handleKeyPress(msg)
+
+	if app.detailTab != InfoTab {
+		t.Errorf("After pressing 1: detailTab = %v, want InfoTab", app.detailTab)
+	}
+
+	// Press 2 to switch back to LogsTab
+	msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}}
+	app.handleKeyPress(msg)
+
+	if app.detailTab != LogsTab {
+		t.Errorf("After pressing 2: detailTab = %v, want LogsTab", app.detailTab)
 	}
 }
 
@@ -427,7 +505,7 @@ func TestApp_FocusPrevPane(t *testing.T) {
 	}{
 		{WorkflowsPane, WorkflowsPane}, // Can't go before first
 		{RunsPane, WorkflowsPane},
-		{LogsPane, RunsPane},
+		{JobsPane, RunsPane},
 	}
 
 	for _, tt := range tests {
@@ -447,8 +525,8 @@ func TestApp_FocusNextPane(t *testing.T) {
 		want  Pane
 	}{
 		{WorkflowsPane, RunsPane},
-		{RunsPane, LogsPane},
-		{LogsPane, LogsPane}, // Can't go past last
+		{RunsPane, JobsPane},
+		{JobsPane, JobsPane}, // Can't go past last
 	}
 
 	for _, tt := range tests {
@@ -602,9 +680,10 @@ func TestApp_RenderPanes(t *testing.T) {
 	app.height = 40
 
 	// Just test they don't panic
-	_ = app.renderWorkflowsPane()
-	_ = app.renderRunsPane()
-	_ = app.renderLogsPane()
+	_ = app.buildWorkflowsPanel(30, 10)
+	_ = app.buildRunsPanel(30, 10)
+	_ = app.buildJobsPanel(30, 10)
+	_ = app.buildDetailPanel(60, 30)
 	_ = app.renderStatusBar()
 	_ = app.renderHelp()
 
@@ -708,10 +787,10 @@ func TestApp_NavigateDownInRunsPane(t *testing.T) {
 	}
 }
 
-func TestApp_NavigateUpInLogsPane(t *testing.T) {
+func TestApp_NavigateUpInJobsPane(t *testing.T) {
 	mock := &github.MockClient{}
 	app := New(WithClient(mock))
-	app.focusedPane = LogsPane
+	app.focusedPane = JobsPane
 	app.jobs.SetItems([]github.Job{
 		{ID: 1, Name: "build"},
 		{ID: 2, Name: "test"},
@@ -740,9 +819,9 @@ func TestApp_ApplyFilterOnRunsPane(t *testing.T) {
 	}
 }
 
-func TestApp_ApplyFilterOnLogsPane(t *testing.T) {
+func TestApp_ApplyFilterOnJobsPane(t *testing.T) {
 	app := New()
-	app.focusedPane = LogsPane
+	app.focusedPane = JobsPane
 	app.jobs.SetItems([]github.Job{
 		{ID: 1, Name: "build"},
 		{ID: 2, Name: "test"},
