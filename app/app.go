@@ -76,6 +76,10 @@ type App struct {
 
 	// Fullscreen log mode
 	fullscreenLog bool
+
+	// Mouse tracking
+	mouseX int
+	mouseY int
 }
 
 // Option is a functional option for App
@@ -153,6 +157,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd := a.handleKeyPress(msg)
 		if cmd != nil {
 			cmds = append(cmds, cmd)
+		}
+
+	case tea.MouseMsg:
+		model, cmd := a.handleMouseEvent(msg)
+		if cmd != nil {
+			return model, cmd
 		}
 
 	case tea.WindowSizeMsg:
@@ -546,6 +556,113 @@ func (a *App) focusNextPaneWithSelect() tea.Cmd {
 	return nil
 }
 
+// handleMouseEvent handles mouse events
+func (a *App) handleMouseEvent(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	// Always track mouse position for hover highlighting
+	a.mouseX = msg.X
+	a.mouseY = msg.Y
+
+	// Ignore actions when popups are shown
+	if a.showHelp || a.showConfirm || a.fullscreenLog || a.filtering {
+		return a, nil
+	}
+
+	switch msg.Button {
+	case tea.MouseButtonWheelUp:
+		return a.handleScrollUp()
+	case tea.MouseButtonWheelDown:
+		return a.handleScrollDown()
+	case tea.MouseButtonLeft:
+		if msg.Action == tea.MouseActionRelease {
+			return a.handleClick(msg.X, msg.Y)
+		}
+	}
+	return a, nil
+}
+
+// handleClick handles mouse click events
+func (a *App) handleClick(x, y int) (tea.Model, tea.Cmd) {
+	leftWidth := int(float64(a.width) * 0.30)
+	if leftWidth < 20 {
+		leftWidth = 20
+	}
+	totalHeight := a.height - 1
+	if totalHeight < 10 {
+		totalHeight = 10
+	}
+	panelHeight := totalHeight / 3
+	if panelHeight < 5 {
+		panelHeight = 5
+	}
+
+	// Only handle clicks in the left sidebar
+	if x >= leftWidth {
+		return a, nil
+	}
+
+	// Determine which panel was clicked
+	if y < panelHeight {
+		// Workflows panel
+		a.focusedPane = WorkflowsPane
+		// Calculate item index (account for border + title line)
+		itemIdx := y - 2
+		if itemIdx >= 0 && itemIdx < a.workflows.Len() {
+			a.workflows.Select(itemIdx)
+			return a, a.onWorkflowSelectionChange()
+		}
+	} else if y < 2*panelHeight {
+		// Runs panel
+		a.focusedPane = RunsPane
+		itemIdx := y - panelHeight - 2
+		if itemIdx >= 0 && itemIdx < a.runs.Len() {
+			a.runs.Select(itemIdx)
+			return a, a.onRunSelectionChange()
+		}
+	} else if y < totalHeight {
+		// Jobs panel
+		a.focusedPane = JobsPane
+		itemIdx := y - 2*panelHeight - 2
+		if itemIdx >= 0 && itemIdx < a.jobs.Len() {
+			a.jobs.Select(itemIdx)
+			return a, a.onJobSelectionChange()
+		}
+	}
+
+	return a, nil
+}
+
+// handleScrollUp handles mouse wheel up
+func (a *App) handleScrollUp() (tea.Model, tea.Cmd) {
+	switch a.focusedPane {
+	case WorkflowsPane:
+		a.workflows.SelectPrev()
+		return a, a.onWorkflowSelectionChange()
+	case RunsPane:
+		a.runs.SelectPrev()
+		return a, a.onRunSelectionChange()
+	case JobsPane:
+		a.jobs.SelectPrev()
+		return a, a.onJobSelectionChange()
+	}
+	return a, nil
+}
+
+// handleScrollDown handles mouse wheel down
+func (a *App) handleScrollDown() (tea.Model, tea.Cmd) {
+	switch a.focusedPane {
+	case WorkflowsPane:
+		a.workflows.SelectNext()
+		return a, a.onWorkflowSelectionChange()
+	case RunsPane:
+		a.runs.SelectNext()
+		return a, a.onRunSelectionChange()
+	case JobsPane:
+		a.jobs.SelectNext()
+		return a, a.onJobSelectionChange()
+	}
+	return a, nil
+}
+
 // onWorkflowSelectionChange handles workflow selection change
 func (a *App) onWorkflowSelectionChange() tea.Cmd {
 	if wf, ok := a.workflows.Selected(); ok {
@@ -684,15 +801,29 @@ func (a *App) buildWorkflowsPanel(width, height int) []string {
 	}
 	lines := make([]string, height)
 
+	focused := a.focusedPane == WorkflowsPane
 	borderColor := UnfocusedColor
-	if a.focusedPane == WorkflowsPane {
+	if focused {
 		borderColor = FocusedColor
 	}
 	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
 
-	title := " Workflows "
+	// Title with lazydocker-style inverted colors when focused
+	titleText := "Workflows"
 	if a.loading {
-		title = " Workflows " + a.spinner.View() + " "
+		titleText = "Workflows " + a.spinner.View()
+	}
+	var title string
+	if focused {
+		title = " " + FocusedTitle.Render(" "+titleText+" ") + " "
+	} else {
+		title = " " + titleText + " "
+	}
+
+	// Calculate left panel width for hover detection
+	leftWidth := int(float64(a.width) * 0.30)
+	if leftWidth < 20 {
+		leftWidth = 20
 	}
 
 	var content []string
@@ -706,12 +837,11 @@ func (a *App) buildWorkflowsPanel(width, height int) []string {
 	} else {
 		for i, wf := range items {
 			selected := i == a.workflows.SelectedIndex()
+			// Hover: mouse is in left panel and on this item's row
+			// Row 0 = title/border, so item i is at row i+1, but we need +1 more for border offset
+			hovered := a.mouseX < leftWidth && a.mouseY == i+2
 			name := truncateString(wf.Name, width-6)
-			if selected {
-				content = append(content, SelectedItem.Render("> "+name))
-			} else {
-				content = append(content, "  "+name)
-			}
+			content = append(content, a.renderListItem(name, selected, focused, hovered))
 		}
 	}
 
@@ -739,13 +869,33 @@ func (a *App) buildRunsPanel(width, height int) []string {
 	}
 	lines := make([]string, height)
 
+	focused := a.focusedPane == RunsPane
 	borderColor := UnfocusedColor
-	if a.focusedPane == RunsPane {
+	if focused {
 		borderColor = FocusedColor
 	}
 	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
 
-	title := " Runs "
+	// Title with lazydocker-style inverted colors when focused
+	titleText := "Runs"
+	var title string
+	if focused {
+		title = " " + FocusedTitle.Render(" "+titleText+" ") + " "
+	} else {
+		title = " " + titleText + " "
+	}
+
+	// Calculate panel position and left width for hover detection
+	leftWidth := int(float64(a.width) * 0.30)
+	if leftWidth < 20 {
+		leftWidth = 20
+	}
+	totalHeight := a.height - 1
+	if totalHeight < 10 {
+		totalHeight = 10
+	}
+	panelHeight := totalHeight / 3
+	panelStartY := panelHeight // Runs panel starts after Workflows panel
 
 	var content []string
 	items := a.runs.Items()
@@ -754,14 +904,12 @@ func (a *App) buildRunsPanel(width, height int) []string {
 	} else {
 		for i, run := range items {
 			selected := i == a.runs.SelectedIndex()
+			// Hover: mouse is in left panel and on this item's row
+			hovered := a.mouseX < leftWidth && a.mouseY == panelStartY+i+2
 			icon := StatusIcon(run.Status, run.Conclusion)
 			line := icon + " #" + formatRunNumber(run.ID) + " " + run.Branch
 			line = truncateString(line, width-6)
-			if selected {
-				content = append(content, SelectedItem.Render("> "+line))
-			} else {
-				content = append(content, "  "+line)
-			}
+			content = append(content, a.renderListItem(line, selected, focused, hovered))
 		}
 	}
 
@@ -789,13 +937,33 @@ func (a *App) buildJobsPanel(width, height int) []string {
 	}
 	lines := make([]string, height)
 
+	focused := a.focusedPane == JobsPane
 	borderColor := UnfocusedColor
-	if a.focusedPane == JobsPane {
+	if focused {
 		borderColor = FocusedColor
 	}
 	borderStyle := lipgloss.NewStyle().Foreground(borderColor)
 
-	title := " Jobs "
+	// Title with lazydocker-style inverted colors when focused
+	titleText := "Jobs"
+	var title string
+	if focused {
+		title = " " + FocusedTitle.Render(" "+titleText+" ") + " "
+	} else {
+		title = " " + titleText + " "
+	}
+
+	// Calculate panel position and left width for hover detection
+	leftWidth := int(float64(a.width) * 0.30)
+	if leftWidth < 20 {
+		leftWidth = 20
+	}
+	totalHeight := a.height - 1
+	if totalHeight < 10 {
+		totalHeight = 10
+	}
+	panelHeight := totalHeight / 3
+	panelStartY := 2 * panelHeight // Jobs panel starts after Workflows and Runs panels
 
 	var content []string
 	items := a.jobs.Items()
@@ -804,13 +972,11 @@ func (a *App) buildJobsPanel(width, height int) []string {
 	} else {
 		for i, job := range items {
 			selected := i == a.jobs.SelectedIndex()
+			// Hover: mouse is in left panel and on this item's row
+			hovered := a.mouseX < leftWidth && a.mouseY == panelStartY+i+2
 			icon := StatusIcon(job.Status, job.Conclusion)
 			line := icon + " " + truncateString(job.Name, width-10)
-			if selected {
-				content = append(content, SelectedItem.Render("> "+line))
-			} else {
-				content = append(content, "  "+line)
-			}
+			content = append(content, a.renderListItem(line, selected, focused, hovered))
 		}
 	}
 
@@ -1181,6 +1347,20 @@ func formatRunNumber(id int64) string {
 	return strconv.FormatInt(id, 10)
 }
 
+// renderListItem renders a list item with appropriate styling based on selection and focus state
+func (a *App) renderListItem(text string, selected, focused, _ bool) string {
+	if selected {
+		if focused {
+			// Focused + selected: green cursor + bright selection
+			return CursorStyle.Render(">") + SelectedItemFocused.Render(" "+text)
+		}
+		// Unfocused + selected: dim selection without cursor
+		return SelectedItemUnfocused.Render("  " + text)
+	}
+	// Not selected: normal text
+	return NormalItem.Render("  " + text)
+}
+
 // truncateString truncates a string to maxLen display width, adding "..." if truncated
 func truncateString(s string, maxLen int) string {
 	if maxLen <= 3 {
@@ -1232,7 +1412,10 @@ func Run(client github.Client, repo github.Repository) error {
 		WithRepository(repo),
 	)
 
-	p := tea.NewProgram(app, tea.WithAltScreen())
+	p := tea.NewProgram(app,
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
+	)
 	_, err := p.Run()
 	return err
 }

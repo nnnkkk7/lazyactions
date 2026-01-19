@@ -159,6 +159,17 @@ func (l *FilteredList[T]) Len() int {
 	return len(l.filtered)
 }
 
+// Select sets the selection to the specified index.
+// Does nothing if the index is out of bounds.
+func (l *FilteredList[T]) Select(idx int) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if idx >= 0 && idx < len(l.filtered) {
+		l.selectedIdx = idx
+	}
+}
+
 // Reset clears the filter and resets the selection to the first item.
 func (l *FilteredList[T]) Reset() {
 	l.mu.Lock()

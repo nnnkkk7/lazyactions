@@ -486,6 +486,58 @@ func TestSelectPrev_NoOpWhenEmpty(t *testing.T) {
 }
 
 // =============================================================================
+// Select Tests
+// =============================================================================
+
+func TestSelect_SetsIndex(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+		{Name: "Gamma", ID: 3},
+	})
+
+	list.Select(2)
+
+	if list.SelectedIndex() != 2 {
+		t.Errorf("After Select(2), SelectedIndex() = %d, want 2", list.SelectedIndex())
+	}
+}
+
+func TestSelect_IgnoresOutOfBoundsIndex(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+	})
+
+	list.Select(1) // valid
+	list.Select(5) // out of bounds - should be ignored
+
+	if list.SelectedIndex() != 1 {
+		t.Errorf("SelectedIndex() = %d, want 1 (out of bounds should be ignored)", list.SelectedIndex())
+	}
+}
+
+func TestSelect_IgnoresNegativeIndex(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+	})
+
+	list.Select(1) // valid
+	list.Select(-1) // negative - should be ignored
+
+	if list.SelectedIndex() != 1 {
+		t.Errorf("SelectedIndex() = %d, want 1 (negative index should be ignored)", list.SelectedIndex())
+	}
+}
+
+// =============================================================================
 // SelectedIndex Tests
 // =============================================================================
 

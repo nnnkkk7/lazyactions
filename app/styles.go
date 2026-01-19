@@ -20,15 +20,14 @@ var (
 			Border(lipgloss.NormalBorder()).
 			BorderForeground(UnfocusedColor)
 
-	// Title styles
+	// Title styles - lazydocker style inverted title for focused panel
 	FocusedTitle = lipgloss.NewStyle().
 			Background(FocusedColor).
 			Foreground(lipgloss.Color("#000000")).
-			Padding(0, 1).Bold(true)
+			Bold(true)
 
 	UnfocusedTitle = lipgloss.NewStyle().
-			Foreground(UnfocusedColor).
-			Padding(0, 1)
+			Foreground(UnfocusedColor)
 
 	// Status icons
 	SuccessStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
@@ -37,13 +36,26 @@ var (
 	QueuedStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
 	CancelledStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8800"))
 
-	// Selection
-	SelectedItem = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#0055AA"))
+	// Selection - lazydocker style: bright selection for focused, dim for unfocused
+	SelectedItemFocused = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#FFFFFF")).
+				Background(lipgloss.Color("#0066CC")).
+				Bold(true)
+
+	SelectedItemUnfocused = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#CCCCCC")).
+				Background(lipgloss.Color("#444444"))
+
+	// Cursor style for selected item
+	CursorStyle = lipgloss.NewStyle().
+			Foreground(FocusedColor).
+			Bold(true)
 
 	NormalItem = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#AAAAAA"))
+
+	// Keep backward compatibility
+	SelectedItem = SelectedItemFocused
 
 	// Dialogs
 	ConfirmDialog = lipgloss.NewStyle().

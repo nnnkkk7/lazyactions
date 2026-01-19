@@ -422,6 +422,209 @@ func TestApp_HandleKeyPress_DetailTabSwitch(t *testing.T) {
 	}
 }
 
+func TestApp_HandleMouseEvent_WheelUp(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.workflows.SetItems([]github.Workflow{
+		{ID: 1, Name: "CI"},
+		{ID: 2, Name: "Deploy"},
+	})
+	app.workflows.SelectNext() // Move to index 1
+
+	if app.workflows.SelectedIndex() != 1 {
+		t.Fatalf("Setup failed: SelectedIndex = %d, want 1", app.workflows.SelectedIndex())
+	}
+
+	msg := tea.MouseMsg{Button: tea.MouseButtonWheelUp}
+	app.handleMouseEvent(msg)
+
+	if app.workflows.SelectedIndex() != 0 {
+		t.Errorf("After wheel up: SelectedIndex = %d, want 0", app.workflows.SelectedIndex())
+	}
+}
+
+func TestApp_HandleMouseEvent_WheelDown(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.workflows.SetItems([]github.Workflow{
+		{ID: 1, Name: "CI"},
+		{ID: 2, Name: "Deploy"},
+	})
+
+	if app.workflows.SelectedIndex() != 0 {
+		t.Fatalf("Setup failed: SelectedIndex = %d, want 0", app.workflows.SelectedIndex())
+	}
+
+	msg := tea.MouseMsg{Button: tea.MouseButtonWheelDown}
+	app.handleMouseEvent(msg)
+
+	if app.workflows.SelectedIndex() != 1 {
+		t.Errorf("After wheel down: SelectedIndex = %d, want 1", app.workflows.SelectedIndex())
+	}
+}
+
+func TestApp_HandleMouseEvent_IgnoredWhenPopupShown(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.showHelp = true
+
+	msg := tea.MouseMsg{Button: tea.MouseButtonWheelDown}
+	app.handleMouseEvent(msg)
+
+	// Mouse events should be ignored when popup is shown
+	// No crash = test passes
+}
+
+func TestApp_HandleClick_WorkflowsPane(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.workflows.SetItems([]github.Workflow{
+		{ID: 1, Name: "CI"},
+		{ID: 2, Name: "Deploy"},
+		{ID: 3, Name: "Test"},
+	})
+	app.focusedPane = RunsPane // Start in Runs pane
+
+	// Click on Workflows panel (y=3 should be around item index 1)
+	app.handleClick(10, 3)
+
+	if app.focusedPane != WorkflowsPane {
+		t.Errorf("After click: focusedPane = %v, want WorkflowsPane", app.focusedPane)
+	}
+}
+
+func TestApp_HandleClick_OutsideLeftPanel(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.focusedPane = WorkflowsPane
+
+	// Click on right panel (x=50 is outside left sidebar which is ~36 wide at 30%)
+	app.handleClick(50, 10)
+
+	// Should remain unchanged
+	if app.focusedPane != WorkflowsPane {
+		t.Errorf("Click on right panel should not change focus: got %v", app.focusedPane)
+	}
+}
+
+func TestApp_HandleMouseEvent_ScrollInRunsPane(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.focusedPane = RunsPane
+	app.runs.SetItems([]github.Run{
+		{ID: 1, Name: "Run 1"},
+		{ID: 2, Name: "Run 2"},
+	})
+
+	msg := tea.MouseMsg{Button: tea.MouseButtonWheelDown}
+	app.handleMouseEvent(msg)
+
+	if app.runs.SelectedIndex() != 1 {
+		t.Errorf("After wheel down in RunsPane: SelectedIndex = %d, want 1", app.runs.SelectedIndex())
+	}
+
+	msg = tea.MouseMsg{Button: tea.MouseButtonWheelUp}
+	app.handleMouseEvent(msg)
+
+	if app.runs.SelectedIndex() != 0 {
+		t.Errorf("After wheel up in RunsPane: SelectedIndex = %d, want 0", app.runs.SelectedIndex())
+	}
+}
+
+func TestApp_HandleMouseEvent_ScrollInJobsPane(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.focusedPane = JobsPane
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build"},
+		{ID: 2, Name: "test"},
+	})
+
+	msg := tea.MouseMsg{Button: tea.MouseButtonWheelDown}
+	app.handleMouseEvent(msg)
+
+	if app.jobs.SelectedIndex() != 1 {
+		t.Errorf("After wheel down in JobsPane: SelectedIndex = %d, want 1", app.jobs.SelectedIndex())
+	}
+
+	msg = tea.MouseMsg{Button: tea.MouseButtonWheelUp}
+	app.handleMouseEvent(msg)
+
+	if app.jobs.SelectedIndex() != 0 {
+		t.Errorf("After wheel up in JobsPane: SelectedIndex = %d, want 0", app.jobs.SelectedIndex())
+	}
+}
+
+func TestApp_HandleClick_RunsPane(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.runs.SetItems([]github.Run{
+		{ID: 1, Name: "Run 1"},
+		{ID: 2, Name: "Run 2"},
+	})
+	app.focusedPane = WorkflowsPane
+
+	// Click on Runs panel (y should be in the Runs panel area)
+	panelHeight := (app.height - 1) / 3
+	app.handleClick(10, panelHeight+3)
+
+	if app.focusedPane != RunsPane {
+		t.Errorf("After click: focusedPane = %v, want RunsPane", app.focusedPane)
+	}
+}
+
+func TestApp_HandleClick_JobsPane(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build"},
+		{ID: 2, Name: "test"},
+	})
+	app.focusedPane = WorkflowsPane
+
+	// Click on Jobs panel (y should be in the Jobs panel area)
+	panelHeight := (app.height - 1) / 3
+	app.handleClick(10, 2*panelHeight+3)
+
+	if app.focusedPane != JobsPane {
+		t.Errorf("After click: focusedPane = %v, want JobsPane", app.focusedPane)
+	}
+}
+
+func TestApp_HandleMouseEvent_LeftClickRelease(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.workflows.SetItems([]github.Workflow{
+		{ID: 1, Name: "CI"},
+		{ID: 2, Name: "Deploy"},
+	})
+	app.focusedPane = RunsPane
+
+	// Test left click release triggers handleClick
+	msg := tea.MouseMsg{
+		Button: tea.MouseButtonLeft,
+		Action: tea.MouseActionRelease,
+		X:      10,
+		Y:      3,
+	}
+	app.handleMouseEvent(msg)
+
+	// Should have switched to Workflows pane
+	if app.focusedPane != WorkflowsPane {
+		t.Errorf("After left click release: focusedPane = %v, want WorkflowsPane", app.focusedPane)
+	}
+}
+
 func TestApp_HandleFilterInput_Escape(t *testing.T) {
 	app := New()
 	app.filtering = true
