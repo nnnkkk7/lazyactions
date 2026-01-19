@@ -1,42 +1,35 @@
-name: tagpr
+name: Release (Manual)
 
 on:
-  push:
-    branches:
-      - main
+  # Manual trigger for re-running releases or releasing existing tags
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v1.0.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  tagpr:
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.run-tagpr.outputs.tag }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Run tagpr
-        id: run-tagpr
-        uses: Songmu/tagpr@fa7d23a4aada5ab0d15a76277a7e0b70d107a9c3 # v1.11.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release:
-    needs: tagpr
-    # Only run if tagpr created a tag (release PR was merged)
-    if: needs.tagpr.outputs.tag != ''
+  goreleaser:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ needs.tagpr.outputs.tag }}
+          ref: ${{ inputs.tag }}
           fetch-depth: 0
+
+      - name: Verify tag exists
+        run: |
+          if ! git rev-parse "${{ inputs.tag }}" >/dev/null 2>&1; then
+            echo "Error: Tag ${{ inputs.tag }} does not exist"
+            exit 1
+          fi
+          echo "Release tag: ${{ inputs.tag }}"
 
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
