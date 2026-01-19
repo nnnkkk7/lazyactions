@@ -783,10 +783,9 @@ func (a *App) triggerWorkflow() tea.Cmd {
 // yankURL copies the selected run URL to clipboard
 func (a *App) yankURL() tea.Cmd {
 	if run, ok := a.runs.Selected(); ok && run.URL != "" {
-		if err := a.clipboard.WriteAll(run.URL); err != nil {
-			// Clipboard not available (e.g., headless environment)
-			// Show URL in flash message so user can copy manually
-			return flashMessage("URL: "+run.URL, 3)
+		if err := clipboard.WriteAll(run.URL); err != nil {
+			a.err = err
+			return nil
 		}
 		return flashMessage("Copied: "+run.URL, 2)
 	}
