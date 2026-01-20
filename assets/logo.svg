@@ -27,7 +27,7 @@
   <polygon points="56,62 56,90 80,76" fill="#FFFFFF"/>
 
   <!-- Lazy "Z" elements (sleeping/lazy indicator) -->
-  <text x="92" y="54" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#8B949E">z</text>
-  <text x="100" y="46" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#6E7681">z</text>
-  <text x="106" y="40" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#484F58">z</text>
+  <text x="88" y="58" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#58A6FF">z</text>
+  <text x="100" y="46" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#79B8FF">z</text>
+  <text x="110" y="36" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#A5D6FF">z</text>
 </svg>
