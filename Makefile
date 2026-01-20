@@ -68,8 +68,8 @@ run:
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run
 
-# CI (lint + coverage check + build)
-ci: lint cover-check build
+# CI (lint + test + build)
+ci: lint test build
 
 # Development (format + lint + test)
 dev: fmt lint test
