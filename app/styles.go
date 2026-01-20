@@ -71,6 +71,17 @@ var (
 	StatusBar = lipgloss.NewStyle().
 			Background(lipgloss.Color("#333333")).
 			Padding(0, 1)
+
+	// Log syntax highlighting styles
+	LogTimestampStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FFFF"))
+	LogGroupStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")).Bold(true)
+	LogEndGroupStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#006600"))
+	LogErrorStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Bold(true)
+	LogWarningStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8800"))
+	LogNoticeStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FFFF"))
+	LogErrorKeyword    = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF6666"))
+	LogWarningKeyword  = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFAA00"))
+	LogSuccessKeyword  = lipgloss.NewStyle().Foreground(lipgloss.Color("#66FF66"))
 )
 
 // StatusIcon returns icon for status

@@ -145,3 +145,107 @@ func (p *ParsedLogs) FormatStepLogs(stepIndex int) string {
 	}
 	return strings.Join(formatted, "\n")
 }
+
+// GitHub Actions marker regexes
+var (
+	errorMarkerRegex   = regexp.MustCompile(`##\[error\]`)
+	warningMarkerRegex = regexp.MustCompile(`##\[warning\]`)
+	noticeMarkerRegex  = regexp.MustCompile(`##\[notice\]`)
+	errorKeywordRegex  = regexp.MustCompile(`(?i)\b(error|failed|failure|panic)\b`)
+	warnKeywordRegex   = regexp.MustCompile(`(?i)\b(warning|warn)\b`)
+	successKeywordRegex = regexp.MustCompile(`(?i)\b(success|passed|ok)\b`)
+)
+
+// FormatLogLineWithColor applies syntax highlighting to a log line
+// It colors timestamps, GitHub Actions markers, and error/warning keywords
+func FormatLogLineWithColor(line string) string {
+	if line == "" {
+		return ""
+	}
+
+	// First, simplify and extract timestamp
+	var timestamp, rest string
+	match := timestampRegex.FindStringSubmatch(line)
+	if match != nil {
+		timestamp = match[2] // HH:MM:SS
+		rest = strings.TrimPrefix(line, match[0])
+	} else {
+		rest = line
+	}
+
+	// Check for GitHub Actions markers (these color the entire line)
+	if errorMarkerRegex.MatchString(rest) {
+		if timestamp != "" {
+			return LogTimestampStyle.Render(timestamp) + " " + LogErrorStyle.Render(rest)
+		}
+		return LogErrorStyle.Render(rest)
+	}
+	if warningMarkerRegex.MatchString(rest) {
+		if timestamp != "" {
+			return LogTimestampStyle.Render(timestamp) + " " + LogWarningStyle.Render(rest)
+		}
+		return LogWarningStyle.Render(rest)
+	}
+	if noticeMarkerRegex.MatchString(rest) {
+		if timestamp != "" {
+			return LogTimestampStyle.Render(timestamp) + " " + LogNoticeStyle.Render(rest)
+		}
+		return LogNoticeStyle.Render(rest)
+	}
+	if groupStartRegex.MatchString(rest) {
+		if timestamp != "" {
+			return LogTimestampStyle.Render(timestamp) + " " + LogGroupStyle.Render(rest)
+		}
+		return LogGroupStyle.Render(rest)
+	}
+	if groupEndRegex.MatchString(rest) {
+		if timestamp != "" {
+			return LogTimestampStyle.Render(timestamp) + " " + LogEndGroupStyle.Render(rest)
+		}
+		return LogEndGroupStyle.Render(rest)
+	}
+
+	// Apply keyword highlighting to the rest of the line
+	rest = highlightKeywords(rest)
+
+	// Combine timestamp and rest
+	if timestamp != "" {
+		return LogTimestampStyle.Render(timestamp) + " " + rest
+	}
+	return rest
+}
+
+// highlightKeywords applies color to error/warning/success keywords in text
+func highlightKeywords(text string) string {
+	// Apply error keywords (red)
+	text = errorKeywordRegex.ReplaceAllStringFunc(text, func(match string) string {
+		return LogErrorKeyword.Render(match)
+	})
+
+	// Apply warning keywords (orange)
+	text = warnKeywordRegex.ReplaceAllStringFunc(text, func(match string) string {
+		return LogWarningKeyword.Render(match)
+	})
+
+	// Apply success keywords (green)
+	text = successKeywordRegex.ReplaceAllStringFunc(text, func(match string) string {
+		return LogSuccessKeyword.Render(match)
+	})
+
+	return text
+}
+
+// FormatStepLogsWithColor formats all lines with syntax highlighting
+func (p *ParsedLogs) FormatStepLogsWithColor(stepIndex int) string {
+	logs := p.GetStepLogs(stepIndex)
+	if logs == "" {
+		return ""
+	}
+
+	lines := strings.Split(logs, "\n")
+	formatted := make([]string, len(lines))
+	for i, line := range lines {
+		formatted[i] = FormatLogLineWithColor(line)
+	}
+	return strings.Join(formatted, "\n")
+}

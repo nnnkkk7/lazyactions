@@ -854,8 +854,8 @@ func (a *App) updateLogViewContent() {
 		return
 	}
 
-	// Get logs for the selected step (formatted with simplified timestamps)
-	logs := a.parsedLogs.FormatStepLogs(a.selectedStepIdx)
+	// Get logs for the selected step (formatted with syntax highlighting)
+	logs := a.parsedLogs.FormatStepLogsWithColor(a.selectedStepIdx)
 	if logs == "" {
 		logs = "No logs available"
 	}

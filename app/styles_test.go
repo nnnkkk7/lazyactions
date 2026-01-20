@@ -246,6 +246,16 @@ func TestStyleVariables_NotNil(t *testing.T) {
 		{"ConfirmDialog", func() string { return ConfirmDialog.Render("test") }},
 		{"HelpPopup", func() string { return HelpPopup.Render("test") }},
 		{"StatusBar", func() string { return StatusBar.Render("test") }},
+		// Log syntax highlighting styles
+		{"LogTimestampStyle", func() string { return LogTimestampStyle.Render("test") }},
+		{"LogGroupStyle", func() string { return LogGroupStyle.Render("test") }},
+		{"LogEndGroupStyle", func() string { return LogEndGroupStyle.Render("test") }},
+		{"LogErrorStyle", func() string { return LogErrorStyle.Render("test") }},
+		{"LogWarningStyle", func() string { return LogWarningStyle.Render("test") }},
+		{"LogNoticeStyle", func() string { return LogNoticeStyle.Render("test") }},
+		{"LogErrorKeyword", func() string { return LogErrorKeyword.Render("test") }},
+		{"LogWarningKeyword", func() string { return LogWarningKeyword.Render("test") }},
+		{"LogSuccessKeyword", func() string { return LogSuccessKeyword.Render("test") }},
 	}
 
 	for _, tt := range tests {
