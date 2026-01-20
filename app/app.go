@@ -1052,7 +1052,7 @@ func (a *App) buildWorkflowsPanel(width, height int) []string {
 	}
 
 	innerWidth := width - 2
-	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	lines[0] = buildBorderHeader(title, innerWidth, borderStyle)
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
 		var line string
@@ -1061,9 +1061,9 @@ func (a *App) buildWorkflowsPanel(width, height int) []string {
 		} else {
 			line = strings.Repeat(" ", innerWidth)
 		}
-		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+		lines[i] = borderStyle.Render("┃") + line + borderStyle.Render("┃")
 	}
-	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+	lines[height-1] = borderStyle.Render("┗" + strings.Repeat("━", innerWidth) + "┛")
 
 	return lines
 }
@@ -1120,7 +1120,7 @@ func (a *App) buildRunsPanel(width, height int) []string {
 	}
 
 	innerWidth := width - 2
-	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	lines[0] = buildBorderHeader(title, innerWidth, borderStyle)
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
 		var line string
@@ -1129,9 +1129,9 @@ func (a *App) buildRunsPanel(width, height int) []string {
 		} else {
 			line = strings.Repeat(" ", innerWidth)
 		}
-		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+		lines[i] = borderStyle.Render("┃") + line + borderStyle.Render("┃")
 	}
-	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+	lines[height-1] = borderStyle.Render("┗" + strings.Repeat("━", innerWidth) + "┛")
 
 	return lines
 }
@@ -1187,7 +1187,7 @@ func (a *App) buildJobsPanel(width, height int) []string {
 	}
 
 	innerWidth := width - 2
-	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	lines[0] = buildBorderHeader(title, innerWidth, borderStyle)
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
 		var line string
@@ -1196,9 +1196,9 @@ func (a *App) buildJobsPanel(width, height int) []string {
 		} else {
 			line = strings.Repeat(" ", innerWidth)
 		}
-		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+		lines[i] = borderStyle.Render("┃") + line + borderStyle.Render("┃")
 	}
-	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+	lines[height-1] = borderStyle.Render("┗" + strings.Repeat("━", innerWidth) + "┛")
 
 	return lines
 }
@@ -1232,7 +1232,7 @@ func (a *App) buildDetailPanel(width, height int) []string {
 	}
 
 	innerWidth := width - 2
-	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(tabHeader, innerWidth, "─")) + borderStyle.Render("┐")
+	lines[0] = buildBorderHeader(tabHeader, innerWidth, borderStyle)
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
 		var line string
@@ -1241,9 +1241,9 @@ func (a *App) buildDetailPanel(width, height int) []string {
 		} else {
 			line = strings.Repeat(" ", innerWidth)
 		}
-		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+		lines[i] = borderStyle.Render("┃") + line + borderStyle.Render("┃")
 	}
-	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+	lines[height-1] = borderStyle.Render("┗" + strings.Repeat("━", innerWidth) + "┛")
 
 	return lines
 }
@@ -1406,6 +1406,18 @@ func padCenter(s string, width int, fill string) string {
 	leftPad := (width - sLen) / 2
 	rightPad := width - sLen - leftPad
 	return strings.Repeat(fill, leftPad) + s + strings.Repeat(fill, rightPad)
+}
+
+// buildBorderHeader builds a header line with proper styling for borders
+// This ensures the border color is applied correctly even after styled title text
+func buildBorderHeader(title string, innerWidth int, borderStyle lipgloss.Style) string {
+	titleWidth := lipgloss.Width(title)
+	if titleWidth >= innerWidth {
+		return borderStyle.Render("┏") + title + borderStyle.Render("┓")
+	}
+	leftPad := (innerWidth - titleWidth) / 2
+	rightPad := innerWidth - titleWidth - leftPad
+	return borderStyle.Render("┏"+strings.Repeat("━", leftPad)) + title + borderStyle.Render(strings.Repeat("━", rightPad)+"┓")
 }
 
 // truncateToWidth truncates a string to fit within the specified display width
