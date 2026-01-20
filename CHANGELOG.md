@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.8](https://github.com/nnnkkk7/lazyactions/compare/v0.0.7...v0.0.8) - 2026-01-20
+- chore: fix ignore path by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/36
+- feat: implement step navigation and log parsing for detail panel by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/38
+- chore: update logo by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/39
+
 ## [v0.0.7](https://github.com/nnnkkk7/lazyactions/compare/v0.0.6...v0.0.7) - 2026-01-19
 - docs: update readme by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/30
 - deps: use gotestsum by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/32
