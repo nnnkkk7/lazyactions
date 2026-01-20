@@ -1397,17 +1397,6 @@ func padRight(s string, width int) string {
 	return s + strings.Repeat(" ", width-currentWidth)
 }
 
-// padCenter centers a string within the specified width, filling with the given char
-func padCenter(s string, width int, fill string) string {
-	sLen := lipgloss.Width(s)
-	if sLen >= width {
-		return s
-	}
-	leftPad := (width - sLen) / 2
-	rightPad := width - sLen - leftPad
-	return strings.Repeat(fill, leftPad) + s + strings.Repeat(fill, rightPad)
-}
-
 // buildBorderHeader builds a header line with proper styling for borders
 // This ensures the border color is applied correctly even after styled title text
 func buildBorderHeader(title string, innerWidth int, borderStyle lipgloss.Style) string {
