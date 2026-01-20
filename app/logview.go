@@ -62,3 +62,21 @@ func (lv *LogViewport) Update(msg tea.Msg) (*LogViewport, tea.Cmd) {
 func (lv *LogViewport) isAtBottom() bool {
 	return lv.viewport.AtBottom()
 }
+
+// ScrollUp scrolls the viewport up by one line.
+func (lv *LogViewport) ScrollUp() {
+	lv.viewport.ScrollUp(1)
+	lv.autoscroll = false
+}
+
+// ScrollDown scrolls the viewport down by one line.
+func (lv *LogViewport) ScrollDown() {
+	lv.viewport.ScrollDown(1)
+	lv.autoscroll = lv.isAtBottom()
+}
+
+// GotoTop scrolls to the top of the content.
+func (lv *LogViewport) GotoTop() {
+	lv.viewport.GotoTop()
+	lv.autoscroll = false
+}

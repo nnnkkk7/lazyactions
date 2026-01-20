@@ -95,6 +95,11 @@ type App struct {
 	// Mouse tracking
 	mouseX int
 	mouseY int
+
+	// Step-selectable logs
+	parsedLogs      *ParsedLogs // Parsed log structure with steps
+	selectedStepIdx int         // -1 = "All logs", 0+ = specific step
+	stepListFocused bool        // Whether the step list has focus (vs log content)
 }
 
 // Option is a functional option for App
@@ -142,11 +147,13 @@ func New(opts ...Option) *App {
 		jobs: NewFilteredList(func(j github.Job, filter string) bool {
 			return strings.Contains(strings.ToLower(j.Name), strings.ToLower(filter))
 		}),
-		focusedPane: WorkflowsPane,
-		logView:     NewLogViewport(80, 20),
-		filterInput: ti,
-		spinner:     s,
-		keys:        DefaultKeyMap(),
+		focusedPane:     WorkflowsPane,
+		logView:         NewLogViewport(80, 20),
+		filterInput:     ti,
+		spinner:         s,
+		keys:            DefaultKeyMap(),
+		selectedStepIdx: -1, // -1 means "All logs"
+		stepListFocused: true,
 	}
 
 	for _, opt := range opts {
@@ -243,10 +250,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.Err != nil {
 				a.err = msg.Err
 				a.logView.SetContent("Failed to load logs")
+				a.parsedLogs = nil
 			} else {
-				// Wrap log lines to fit within viewport width
-				wrappedLogs := wrapLines(msg.Logs, a.logPaneWidth()-4)
-				a.logView.SetContent(wrappedLogs)
+				// Parse logs into steps
+				a.parsedLogs = ParseLogs(msg.Logs)
+				// Update log view with selected step's logs (formatted)
+				a.updateLogViewContent()
 			}
 		}
 
@@ -407,9 +416,18 @@ func (a *App) handleKeyPress(msg tea.KeyMsg) tea.Cmd {
 			a.showHelp = false
 		} else if a.fullscreenLog {
 			a.fullscreenLog = false
+		} else if a.detailTab == LogsTab && a.focusedPane == JobsPane && !a.stepListFocused {
+			// Return focus to step list from log content
+			a.stepListFocused = true
 		} else if a.err != nil {
 			a.err = nil
 			return a.refreshAll()
+		}
+
+	case key.Matches(msg, a.keys.Enter):
+		// When in Logs tab with step list focused, Enter focuses on log content
+		if a.detailTab == LogsTab && a.focusedPane == JobsPane && a.stepListFocused {
+			a.stepListFocused = false
 		}
 
 	case key.Matches(msg, a.keys.Up):
@@ -531,6 +549,16 @@ func (a *App) navigateUp() tea.Cmd {
 		a.runs.SelectPrev()
 		return a.onRunSelectionChange()
 	case JobsPane:
+		// If in Logs tab and step list is focused, navigate steps
+		if a.detailTab == LogsTab && a.stepListFocused && a.parsedLogs != nil && len(a.parsedLogs.Steps) > 0 {
+			a.navigateStepUp()
+			return nil
+		}
+		// If not step focused, scroll log content
+		if a.detailTab == LogsTab && !a.stepListFocused {
+			a.logView.ScrollUp()
+			return nil
+		}
 		a.jobs.SelectPrev()
 		return a.onJobSelectionChange()
 	}
@@ -547,6 +575,16 @@ func (a *App) navigateDown() tea.Cmd {
 		a.runs.SelectNext()
 		return a.onRunSelectionChange()
 	case JobsPane:
+		// If in Logs tab and step list is focused, navigate steps
+		if a.detailTab == LogsTab && a.stepListFocused && a.parsedLogs != nil && len(a.parsedLogs.Steps) > 0 {
+			a.navigateStepDown()
+			return nil
+		}
+		// If not step focused, scroll log content
+		if a.detailTab == LogsTab && !a.stepListFocused {
+			a.logView.ScrollDown()
+			return nil
+		}
 		a.jobs.SelectNext()
 		return a.onJobSelectionChange()
 	}
@@ -638,12 +676,12 @@ func (a *App) handleClick(x, y int) (tea.Model, tea.Cmd) {
 		panelHeight = 5
 	}
 
-	// Only handle clicks in the left sidebar
+	// Handle clicks in the right panel (detail view)
 	if x >= leftWidth {
-		return a, nil
+		return a.handleDetailPanelClick(x, y, leftWidth, totalHeight)
 	}
 
-	// Determine which panel was clicked
+	// Determine which panel was clicked (left sidebar)
 	if y < panelHeight {
 		// Workflows panel
 		a.focusedPane = WorkflowsPane
@@ -674,8 +712,62 @@ func (a *App) handleClick(x, y int) (tea.Model, tea.Cmd) {
 	return a, nil
 }
 
+// handleDetailPanelClick handles mouse clicks in the detail panel (right side)
+func (a *App) handleDetailPanelClick(_, y, _, _ int) (tea.Model, tea.Cmd) {
+	// Only handle clicks in Logs tab with step list
+	if a.detailTab != LogsTab || a.parsedLogs == nil || len(a.parsedLogs.Steps) == 0 {
+		return a, nil
+	}
+
+	// Calculate the step list area in the detail panel
+	// Layout of buildLogsContent:
+	// Line 0 (y=1): "  Logs: job_name" (title)
+	// Line 1 (y=2): separator
+	// Line 2 (y=3): "  Steps: (hint)"
+	// Line 3 (y=4): empty
+	// Line 4 (y=5): "All logs" option (selectedStepIdx = -1)
+	// Line 5+ (y=6+): individual steps (selectedStepIdx = 0, 1, 2, ...)
+
+	// Content starts at y=1 (after top border)
+	// Step list starts at content line 4 (y=5)
+	stepListStartY := 5 // "All logs" is at y=5
+	stepCount := len(a.parsedLogs.Steps)
+
+	// Check if click is in the step list area
+	if y >= stepListStartY && y < stepListStartY+1+stepCount {
+		clickedIdx := y - stepListStartY - 1 // -1 because "All logs" is at index -1
+
+		// Validate the clicked index
+		if clickedIdx >= -1 && clickedIdx < stepCount {
+			a.selectedStepIdx = clickedIdx
+			a.stepListFocused = true
+			a.updateLogViewContent()
+			a.logView.GotoTop()
+		}
+	}
+
+	return a, nil
+}
+
 // handleScrollUp handles mouse wheel up
 func (a *App) handleScrollUp() (tea.Model, tea.Cmd) {
+	// Calculate left panel width for determining scroll context
+	leftWidth := int(float64(a.width) * 0.30)
+	if leftWidth < 20 {
+		leftWidth = 20
+	}
+
+	// If mouse is in the detail panel and we're in Logs tab with steps, scroll the step list
+	if a.mouseX >= leftWidth && a.detailTab == LogsTab && a.parsedLogs != nil && len(a.parsedLogs.Steps) > 0 {
+		if a.stepListFocused {
+			a.navigateStepUp()
+		} else {
+			a.logView.ScrollUp()
+		}
+		return a, nil
+	}
+
+	// Otherwise, scroll the focused left panel
 	switch a.focusedPane {
 	case WorkflowsPane:
 		a.workflows.SelectPrev()
@@ -692,6 +784,23 @@ func (a *App) handleScrollUp() (tea.Model, tea.Cmd) {
 
 // handleScrollDown handles mouse wheel down
 func (a *App) handleScrollDown() (tea.Model, tea.Cmd) {
+	// Calculate left panel width for determining scroll context
+	leftWidth := int(float64(a.width) * 0.30)
+	if leftWidth < 20 {
+		leftWidth = 20
+	}
+
+	// If mouse is in the detail panel and we're in Logs tab with steps, scroll the step list
+	if a.mouseX >= leftWidth && a.detailTab == LogsTab && a.parsedLogs != nil && len(a.parsedLogs.Steps) > 0 {
+		if a.stepListFocused {
+			a.navigateStepDown()
+		} else {
+			a.logView.ScrollDown()
+		}
+		return a, nil
+	}
+
+	// Otherwise, scroll the focused left panel
 	switch a.focusedPane {
 	case WorkflowsPane:
 		a.workflows.SelectNext()
@@ -729,10 +838,59 @@ func (a *App) onJobSelectionChange() tea.Cmd {
 	if job, ok := a.jobs.Selected(); ok {
 		// Clear current logs and show loading state while fetching new logs
 		a.logView.SetContent("Loading logs...")
+		// Reset step selection for new job
+		a.parsedLogs = nil
+		a.selectedStepIdx = -1
+		a.stepListFocused = true
 		return a.fetchLogsCmd(job.ID)
 	}
 	return nil
 }
+
+// updateLogViewContent updates the log view with the currently selected step's logs
+func (a *App) updateLogViewContent() {
+	if a.parsedLogs == nil {
+		a.logView.SetContent("No logs available")
+		return
+	}
+
+	// Get logs for the selected step (formatted with simplified timestamps)
+	logs := a.parsedLogs.FormatStepLogs(a.selectedStepIdx)
+	if logs == "" {
+		logs = "No logs available"
+	}
+
+	// Wrap log lines to fit within viewport width
+	wrappedLogs := wrapLines(logs, a.logPaneWidth()-4)
+	a.logView.SetContent(wrappedLogs)
+}
+
+// navigateStepUp moves step selection up
+func (a *App) navigateStepUp() {
+	if a.parsedLogs == nil || len(a.parsedLogs.Steps) == 0 {
+		return
+	}
+	// -1 is "All logs", 0 to len-1 are specific steps
+	if a.selectedStepIdx > -1 {
+		a.selectedStepIdx--
+		a.updateLogViewContent()
+		a.logView.GotoTop()
+	}
+}
+
+// navigateStepDown moves step selection down
+func (a *App) navigateStepDown() {
+	if a.parsedLogs == nil || len(a.parsedLogs.Steps) == 0 {
+		return
+	}
+	maxIdx := len(a.parsedLogs.Steps) - 1
+	if a.selectedStepIdx < maxIdx {
+		a.selectedStepIdx++
+		a.updateLogViewContent()
+		a.logView.GotoTop()
+	}
+}
+
 
 // confirmCancelRun shows confirmation dialog for cancelling a run
 func (a *App) confirmCancelRun() tea.Cmd {
@@ -1158,11 +1316,64 @@ func (a *App) buildInfoContent(maxWidth int) []string {
 func (a *App) buildLogsContent(maxWidth int) []string {
 	var content []string
 
-	if job, ok := a.jobs.Selected(); ok {
+	job, jobOk := a.jobs.Selected()
+	if jobOk {
 		content = append(content, "  Logs: "+job.Name)
 		content = append(content, "  "+strings.Repeat("─", 30))
 	}
 
+	// Show step selection list if we have parsed steps
+	if a.parsedLogs != nil && len(a.parsedLogs.Steps) > 0 {
+		// Navigation hint
+		if a.stepListFocused {
+			content = append(content, "  Steps: (↑/↓ select, Enter focus logs)")
+		} else {
+			content = append(content, "  Steps: (Esc back to steps)")
+		}
+		content = append(content, "")
+
+		// "All logs" option
+		allLogsSelected := a.selectedStepIdx == -1
+		allLogsText := "All logs"
+		if allLogsSelected {
+			if a.stepListFocused {
+				content = append(content, "  "+CursorStyle.Render(">")+" "+SelectedItemFocused.Render(allLogsText))
+			} else {
+				content = append(content, "  "+SelectedItemUnfocused.Render("> "+allLogsText))
+			}
+		} else {
+			content = append(content, "    "+NormalItem.Render(allLogsText))
+		}
+
+		// Step list with status icons
+		for i, step := range a.parsedLogs.Steps {
+			stepSelected := a.selectedStepIdx == i
+
+			// Get step status from job.Steps if available
+			icon := " "
+			if jobOk && i < len(job.Steps) {
+				icon = StatusIcon(job.Steps[i].Status, job.Steps[i].Conclusion)
+			}
+
+			stepName := truncateString(step.Name, maxWidth-10)
+			stepText := icon + " " + stepName
+
+			if stepSelected {
+				if a.stepListFocused {
+					content = append(content, "  "+CursorStyle.Render(">")+" "+SelectedItemFocused.Render(stepText))
+				} else {
+					content = append(content, "  "+SelectedItemUnfocused.Render("> "+stepText))
+				}
+			} else {
+				content = append(content, "    "+NormalItem.Render(stepText))
+			}
+		}
+
+		content = append(content, "")
+		content = append(content, "  "+strings.Repeat("─", 30))
+	}
+
+	// Log content
 	logContent := a.logView.View()
 	logLines := strings.Split(logContent, "\n")
 	for _, l := range logLines {
@@ -1267,7 +1478,15 @@ func (a *App) renderStatusBar() string {
 	case RunsPane:
 		actionHints = "[c]ancel [r]erun [R]erun-failed [y]ank"
 	case JobsPane:
-		actionHints = "[L]fullscreen [y]ank"
+		if a.detailTab == LogsTab && a.parsedLogs != nil && len(a.parsedLogs.Steps) > 0 {
+			if a.stepListFocused {
+				actionHints = "[↑/↓]step [Enter]logs [L]fullscreen"
+			} else {
+				actionHints = "[↑/↓]scroll [Esc]steps [L]fullscreen"
+			}
+		} else {
+			actionHints = "[L]fullscreen [y]ank"
+		}
 	}
 
 	// Tab hints
@@ -1334,6 +1553,12 @@ Detail View
 ──────────────────────────────────
 1           Info tab
 2           Logs tab
+
+Step Navigation (Logs tab)
+──────────────────────────────────
+↓/↑         Select step
+Enter       Focus log content
+Esc         Back to step list
 
 View
 ──────────────────────────────────

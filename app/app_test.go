@@ -1094,3 +1094,126 @@ func TestApp_RefreshCurrentWorkflow_WithSelection(t *testing.T) {
 		t.Error("refreshCurrentWorkflow should return command when workflow is selected")
 	}
 }
+
+func TestApp_HandleDetailPanelClick_StepSelection(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.detailTab = LogsTab
+	app.jobs.SetItems([]github.Job{{ID: 1, Name: "build"}})
+
+	// Set up parsed logs with steps
+	rawLogs := `2024-01-15T10:00:00.000Z ##[group]Step 1
+2024-01-15T10:00:01.000Z Line 1
+2024-01-15T10:00:02.000Z ##[endgroup]
+2024-01-15T10:00:03.000Z ##[group]Step 2
+2024-01-15T10:00:04.000Z Line 2
+2024-01-15T10:00:05.000Z ##[endgroup]`
+	app.parsedLogs = ParseLogs(rawLogs)
+
+	// Initial state: selectedStepIdx should be -1 (All logs)
+	if app.selectedStepIdx != -1 {
+		t.Fatalf("Initial selectedStepIdx = %d, want -1", app.selectedStepIdx)
+	}
+
+	leftWidth := int(float64(app.width) * 0.30)
+
+	// Click on "All logs" (y=5)
+	app.handleDetailPanelClick(leftWidth+10, 5, leftWidth, app.height-1)
+	if app.selectedStepIdx != -1 {
+		t.Errorf("After click on All logs: selectedStepIdx = %d, want -1", app.selectedStepIdx)
+	}
+
+	// Click on Step 1 (y=6)
+	app.handleDetailPanelClick(leftWidth+10, 6, leftWidth, app.height-1)
+	if app.selectedStepIdx != 0 {
+		t.Errorf("After click on Step 1: selectedStepIdx = %d, want 0", app.selectedStepIdx)
+	}
+
+	// Click on Step 2 (y=7)
+	app.handleDetailPanelClick(leftWidth+10, 7, leftWidth, app.height-1)
+	if app.selectedStepIdx != 1 {
+		t.Errorf("After click on Step 2: selectedStepIdx = %d, want 1", app.selectedStepIdx)
+	}
+}
+
+func TestApp_HandleDetailPanelClick_NoSteps(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.detailTab = LogsTab
+	app.parsedLogs = nil // No parsed logs
+
+	leftWidth := int(float64(app.width) * 0.30)
+
+	// Click should not cause panic when there are no steps
+	app.handleDetailPanelClick(leftWidth+10, 5, leftWidth, app.height-1)
+	// No panic = test passes
+}
+
+func TestApp_HandleDetailPanelClick_InfoTab(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.detailTab = InfoTab // Not LogsTab
+
+	rawLogs := `2024-01-15T10:00:00.000Z ##[group]Step 1
+2024-01-15T10:00:01.000Z ##[endgroup]`
+	app.parsedLogs = ParseLogs(rawLogs)
+
+	leftWidth := int(float64(app.width) * 0.30)
+
+	// Click should be ignored in Info tab
+	app.handleDetailPanelClick(leftWidth+10, 5, leftWidth, app.height-1)
+	// selectedStepIdx should remain unchanged
+	if app.selectedStepIdx != -1 {
+		t.Errorf("Click in InfoTab should not change selectedStepIdx")
+	}
+}
+
+func TestApp_HandleScrollInDetailPanel_StepList(t *testing.T) {
+	app := New()
+	app.width = 120
+	app.height = 40
+	app.detailTab = LogsTab
+	app.stepListFocused = true
+	app.jobs.SetItems([]github.Job{{ID: 1, Name: "build"}})
+
+	rawLogs := `2024-01-15T10:00:00.000Z ##[group]Step 1
+2024-01-15T10:00:01.000Z ##[endgroup]
+2024-01-15T10:00:02.000Z ##[group]Step 2
+2024-01-15T10:00:03.000Z ##[endgroup]`
+	app.parsedLogs = ParseLogs(rawLogs)
+
+	leftWidth := int(float64(app.width) * 0.30)
+	app.mouseX = leftWidth + 10 // Mouse in detail panel
+
+	// Initial state
+	if app.selectedStepIdx != -1 {
+		t.Fatalf("Initial selectedStepIdx = %d, want -1", app.selectedStepIdx)
+	}
+
+	// Scroll down should select Step 1
+	app.handleScrollDown()
+	if app.selectedStepIdx != 0 {
+		t.Errorf("After scroll down: selectedStepIdx = %d, want 0", app.selectedStepIdx)
+	}
+
+	// Scroll down should select Step 2
+	app.handleScrollDown()
+	if app.selectedStepIdx != 1 {
+		t.Errorf("After second scroll down: selectedStepIdx = %d, want 1", app.selectedStepIdx)
+	}
+
+	// Scroll up should select Step 1
+	app.handleScrollUp()
+	if app.selectedStepIdx != 0 {
+		t.Errorf("After scroll up: selectedStepIdx = %d, want 0", app.selectedStepIdx)
+	}
+
+	// Scroll up should select All logs
+	app.handleScrollUp()
+	if app.selectedStepIdx != -1 {
+		t.Errorf("After second scroll up: selectedStepIdx = %d, want -1", app.selectedStepIdx)
+	}
+}
