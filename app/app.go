@@ -1692,6 +1692,9 @@ func wrapLines(content string, maxWidth int) string {
 
 // Run starts the TUI application
 func Run(client github.Client, repo github.Repository) error {
+	// 起動バナー表示
+	PrintBanner()
+
 	app := New(
 		WithClient(client),
 		WithRepository(repo),
