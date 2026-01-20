@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.10](https://github.com/nnnkkk7/lazyactions/compare/v0.0.9...v0.0.10) - 2026-01-20
+- feat: enhance UI with new banner and panel styles by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/45
+- refactor: replace border rendering logic by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/47
+- chore: update demo by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/48
+
 ## [v0.0.9](https://github.com/nnnkkk7/lazyactions/compare/v0.0.8...v0.0.9) - 2026-01-20
 - chore: update gif by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/41
 - feat: introduce moq by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/40
