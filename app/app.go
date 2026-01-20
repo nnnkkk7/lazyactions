@@ -1052,7 +1052,7 @@ func (a *App) buildWorkflowsPanel(width, height int) []string {
 	}
 
 	innerWidth := width - 2
-	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	lines[0] = borderStyle.Render("┏") + borderStyle.Render(padCenter(title, innerWidth, "━")) + borderStyle.Render("┓")
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
 		var line string
@@ -1061,9 +1061,9 @@ func (a *App) buildWorkflowsPanel(width, height int) []string {
 		} else {
 			line = strings.Repeat(" ", innerWidth)
 		}
-		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+		lines[i] = borderStyle.Render("┃") + line + borderStyle.Render("┃")
 	}
-	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+	lines[height-1] = borderStyle.Render("┗") + borderStyle.Render(strings.Repeat("━", innerWidth)) + borderStyle.Render("┛")
 
 	return lines
 }
@@ -1120,7 +1120,7 @@ func (a *App) buildRunsPanel(width, height int) []string {
 	}
 
 	innerWidth := width - 2
-	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	lines[0] = borderStyle.Render("┏") + borderStyle.Render(padCenter(title, innerWidth, "━")) + borderStyle.Render("┓")
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
 		var line string
@@ -1129,9 +1129,9 @@ func (a *App) buildRunsPanel(width, height int) []string {
 		} else {
 			line = strings.Repeat(" ", innerWidth)
 		}
-		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+		lines[i] = borderStyle.Render("┃") + line + borderStyle.Render("┃")
 	}
-	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+	lines[height-1] = borderStyle.Render("┗") + borderStyle.Render(strings.Repeat("━", innerWidth)) + borderStyle.Render("┛")
 
 	return lines
 }
@@ -1187,7 +1187,7 @@ func (a *App) buildJobsPanel(width, height int) []string {
 	}
 
 	innerWidth := width - 2
-	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(title, innerWidth, "─")) + borderStyle.Render("┐")
+	lines[0] = borderStyle.Render("┏") + borderStyle.Render(padCenter(title, innerWidth, "━")) + borderStyle.Render("┓")
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
 		var line string
@@ -1196,9 +1196,9 @@ func (a *App) buildJobsPanel(width, height int) []string {
 		} else {
 			line = strings.Repeat(" ", innerWidth)
 		}
-		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+		lines[i] = borderStyle.Render("┃") + line + borderStyle.Render("┃")
 	}
-	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+	lines[height-1] = borderStyle.Render("┗") + borderStyle.Render(strings.Repeat("━", innerWidth)) + borderStyle.Render("┛")
 
 	return lines
 }
@@ -1232,7 +1232,7 @@ func (a *App) buildDetailPanel(width, height int) []string {
 	}
 
 	innerWidth := width - 2
-	lines[0] = borderStyle.Render("┌") + borderStyle.Render(padCenter(tabHeader, innerWidth, "─")) + borderStyle.Render("┐")
+	lines[0] = borderStyle.Render("┏") + borderStyle.Render(padCenter(tabHeader, innerWidth, "━")) + borderStyle.Render("┓")
 	for i := 1; i < height-1; i++ {
 		contentIdx := i - 1
 		var line string
@@ -1241,9 +1241,9 @@ func (a *App) buildDetailPanel(width, height int) []string {
 		} else {
 			line = strings.Repeat(" ", innerWidth)
 		}
-		lines[i] = borderStyle.Render("│") + line + borderStyle.Render("│")
+		lines[i] = borderStyle.Render("┃") + line + borderStyle.Render("┃")
 	}
-	lines[height-1] = borderStyle.Render("└") + borderStyle.Render(strings.Repeat("─", innerWidth)) + borderStyle.Render("┘")
+	lines[height-1] = borderStyle.Render("┗") + borderStyle.Render(strings.Repeat("━", innerWidth)) + borderStyle.Render("┛")
 
 	return lines
 }
@@ -1680,6 +1680,9 @@ func wrapLines(content string, maxWidth int) string {
 
 // Run starts the TUI application
 func Run(client github.Client, repo github.Repository) error {
+	// 起動バナー表示
+	PrintBanner()
+
 	app := New(
 		WithClient(client),
 		WithRepository(repo),
