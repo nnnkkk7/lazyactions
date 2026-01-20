@@ -2,6 +2,7 @@
 package integration
 
 import (
+	"context"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,11 +21,60 @@ func (m *MockClipboard) WriteAll(text string) error {
 	return nil
 }
 
+type mockState struct {
+	workflows []github.Workflow
+	runs      []github.Run
+	jobs      []github.Job
+	logs      string
+	err       error
+	rateLimit int
+}
+
+func newMockClient(state *mockState) *github.MockClient {
+	if state == nil {
+		state = &mockState{}
+	}
+
+	return &github.MockClient{
+		ListWorkflowsFunc: func(ctx context.Context, repo github.Repository) ([]github.Workflow, error) {
+			return state.workflows, state.err
+		},
+		ListRunsFunc: func(ctx context.Context, repo github.Repository, opts *github.ListRunsOpts) ([]github.Run, error) {
+			return state.runs, state.err
+		},
+		ListJobsFunc: func(ctx context.Context, repo github.Repository, runID int64) ([]github.Job, error) {
+			return state.jobs, state.err
+		},
+		GetJobLogsFunc: func(ctx context.Context, repo github.Repository, jobID int64) (string, error) {
+			return state.logs, state.err
+		},
+		CancelRunFunc: func(ctx context.Context, repo github.Repository, runID int64) error {
+			return state.err
+		},
+		RerunWorkflowFunc: func(ctx context.Context, repo github.Repository, runID int64) error {
+			return state.err
+		},
+		RerunFailedJobsFunc: func(ctx context.Context, repo github.Repository, runID int64) error {
+			return state.err
+		},
+		TriggerWorkflowFunc: func(ctx context.Context, repo github.Repository, workflowFile, ref string, inputs map[string]interface{}) error {
+			return state.err
+		},
+		RateLimitRemainingFunc: func() int {
+			if state.rateLimit > 0 {
+				return state.rateLimit
+			}
+			return 5000
+		},
+	}
+}
+
 // TestApp wraps App for E2E testing with helper methods.
 type TestApp struct {
 	*app.App
 	t         *testing.T
 	mock      *github.MockClient
+	mockState *mockState
 	clipboard *MockClipboard
 }
 
@@ -35,9 +85,8 @@ type TestOption func(*TestApp)
 func NewTestApp(t *testing.T, opts ...TestOption) *TestApp {
 	t.Helper()
 
-	mock := &github.MockClient{
-		RateLimit: 5000,
-	}
+	state := &mockState{rateLimit: 5000}
+	mock := newMockClient(state)
 	mockClipboard := &MockClipboard{}
 
 	ta := &TestApp{
@@ -48,6 +97,7 @@ func NewTestApp(t *testing.T, opts ...TestOption) *TestApp {
 		),
 		t:         t,
 		mock:      mock,
+		mockState: state,
 		clipboard: mockClipboard,
 	}
 
@@ -61,42 +111,42 @@ func NewTestApp(t *testing.T, opts ...TestOption) *TestApp {
 // WithMockWorkflows sets mock workflows.
 func WithMockWorkflows(workflows []github.Workflow) TestOption {
 	return func(ta *TestApp) {
-		ta.mock.Workflows = workflows
+		ta.mockState.workflows = workflows
 	}
 }
 
 // WithMockRuns sets mock runs.
 func WithMockRuns(runs []github.Run) TestOption {
 	return func(ta *TestApp) {
-		ta.mock.Runs = runs
+		ta.mockState.runs = runs
 	}
 }
 
 // WithMockJobs sets mock jobs.
 func WithMockJobs(jobs []github.Job) TestOption {
 	return func(ta *TestApp) {
-		ta.mock.Jobs = jobs
+		ta.mockState.jobs = jobs
 	}
 }
 
 // WithMockLogs sets mock logs.
 func WithMockLogs(logs string) TestOption {
 	return func(ta *TestApp) {
-		ta.mock.Logs = logs
+		ta.mockState.logs = logs
 	}
 }
 
 // WithMockError sets mock error.
 func WithMockError(err error) TestOption {
 	return func(ta *TestApp) {
-		ta.mock.Err = err
+		ta.mockState.err = err
 	}
 }
 
 // WithMockRateLimit sets mock rate limit.
 func WithMockRateLimit(remaining int) TestOption {
 	return func(ta *TestApp) {
-		ta.mock.RateLimit = remaining
+		ta.mockState.rateLimit = remaining
 	}
 }
 

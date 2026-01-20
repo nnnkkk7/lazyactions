@@ -2,6 +2,8 @@ package github
 
 import "context"
 
+//go:generate moq -out client_moq.go -fmt . Client:MockClient
+
 // Client is the interface for GitHub API operations.
 // It enables dependency injection for testing.
 type Client interface {

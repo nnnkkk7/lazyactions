@@ -48,7 +48,7 @@ func TestPolling_RateLimitIntegration(t *testing.T) {
 		}
 
 		// Simulate rate limit decrease
-		ta.mock.RateLimit = 100
+		ta.mockState.rateLimit = 100
 
 		// Should still function
 		view = ta.App.View()

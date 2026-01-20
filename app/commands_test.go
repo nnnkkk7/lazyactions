@@ -11,12 +11,12 @@ import (
 
 func TestFetchWorkflows(t *testing.T) {
 	t.Run("returns workflows on success", func(t *testing.T) {
-		mock := &github.MockClient{
-			Workflows: []github.Workflow{
+		mock := newMockClient(&mockClientState{
+			workflows: []github.Workflow{
 				{ID: 1, Name: "CI", Path: ".github/workflows/ci.yml", State: "active"},
 				{ID: 2, Name: "Deploy", Path: ".github/workflows/deploy.yml", State: "active"},
 			},
-		}
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 
 		cmd := fetchWorkflows(mock, repo)
@@ -32,15 +32,15 @@ func TestFetchWorkflows(t *testing.T) {
 		if result.Err != nil {
 			t.Errorf("expected no error, got %v", result.Err)
 		}
-		if mock.CallCount("ListWorkflows") != 1 {
-			t.Errorf("expected 1 call to ListWorkflows, got %d", mock.CallCount("ListWorkflows"))
+		if len(mock.ListWorkflowsCalls()) != 1 {
+			t.Errorf("expected 1 call to ListWorkflows, got %d", len(mock.ListWorkflowsCalls()))
 		}
 	})
 
 	t.Run("returns error on failure", func(t *testing.T) {
-		mock := &github.MockClient{
-			Err: errors.New("API error"),
-		}
+		mock := newMockClient(&mockClientState{
+			err: errors.New("API error"),
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 
 		cmd := fetchWorkflows(mock, repo)
@@ -61,12 +61,12 @@ func TestFetchWorkflows(t *testing.T) {
 
 func TestFetchRuns(t *testing.T) {
 	t.Run("returns runs on success", func(t *testing.T) {
-		mock := &github.MockClient{
-			Runs: []github.Run{
+		mock := newMockClient(&mockClientState{
+			runs: []github.Run{
 				{ID: 100, Name: "CI", Status: "completed", Conclusion: "success"},
 				{ID: 101, Name: "CI", Status: "in_progress", Conclusion: ""},
 			},
-		}
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		workflowID := int64(1)
 
@@ -83,28 +83,25 @@ func TestFetchRuns(t *testing.T) {
 		if result.Err != nil {
 			t.Errorf("expected no error, got %v", result.Err)
 		}
-		if mock.CallCount("ListRuns") != 1 {
-			t.Errorf("expected 1 call to ListRuns, got %d", mock.CallCount("ListRuns"))
+		if len(mock.ListRunsCalls()) != 1 {
+			t.Errorf("expected 1 call to ListRuns, got %d", len(mock.ListRunsCalls()))
 		}
 
 		// Verify the workflow ID was passed in opts
-		calls := mock.Calls()
+		calls := mock.ListRunsCalls()
 		if len(calls) == 0 {
 			t.Fatal("expected calls to be recorded")
 		}
-		opts, ok := calls[0].Args[1].(*github.ListRunsOpts)
-		if !ok {
-			t.Fatalf("expected *ListRunsOpts, got %T", calls[0].Args[1])
-		}
+		opts := calls[0].Opts
 		if opts.WorkflowID != workflowID {
 			t.Errorf("expected workflow ID %d, got %d", workflowID, opts.WorkflowID)
 		}
 	})
 
 	t.Run("returns error on failure", func(t *testing.T) {
-		mock := &github.MockClient{
-			Err: errors.New("network error"),
-		}
+		mock := newMockClient(&mockClientState{
+			err: errors.New("network error"),
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 
 		cmd := fetchRuns(mock, repo, 1)
@@ -122,12 +119,12 @@ func TestFetchRuns(t *testing.T) {
 
 func TestFetchJobs(t *testing.T) {
 	t.Run("returns jobs on success", func(t *testing.T) {
-		mock := &github.MockClient{
-			Jobs: []github.Job{
+		mock := newMockClient(&mockClientState{
+			jobs: []github.Job{
 				{ID: 200, Name: "build", Status: "completed", Conclusion: "success"},
 				{ID: 201, Name: "test", Status: "completed", Conclusion: "failure"},
 			},
-		}
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		runID := int64(100)
 
@@ -144,28 +141,25 @@ func TestFetchJobs(t *testing.T) {
 		if result.Err != nil {
 			t.Errorf("expected no error, got %v", result.Err)
 		}
-		if mock.CallCount("ListJobs") != 1 {
-			t.Errorf("expected 1 call to ListJobs, got %d", mock.CallCount("ListJobs"))
+		if len(mock.ListJobsCalls()) != 1 {
+			t.Errorf("expected 1 call to ListJobs, got %d", len(mock.ListJobsCalls()))
 		}
 
 		// Verify the run ID was passed
-		calls := mock.Calls()
+		calls := mock.ListJobsCalls()
 		if len(calls) == 0 {
 			t.Fatal("expected calls to be recorded")
 		}
-		passedRunID, ok := calls[0].Args[1].(int64)
-		if !ok {
-			t.Fatalf("expected int64, got %T", calls[0].Args[1])
-		}
+		passedRunID := calls[0].RunID
 		if passedRunID != runID {
 			t.Errorf("expected run ID %d, got %d", runID, passedRunID)
 		}
 	})
 
 	t.Run("returns error on failure", func(t *testing.T) {
-		mock := &github.MockClient{
-			Err: errors.New("job fetch failed"),
-		}
+		mock := newMockClient(&mockClientState{
+			err: errors.New("job fetch failed"),
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 
 		cmd := fetchJobs(mock, repo, 100)
@@ -184,9 +178,9 @@ func TestFetchJobs(t *testing.T) {
 func TestFetchLogs(t *testing.T) {
 	t.Run("returns logs on success", func(t *testing.T) {
 		expectedLogs := "2024-01-01T00:00:00Z Running tests...\n2024-01-01T00:00:01Z Tests passed!"
-		mock := &github.MockClient{
-			Logs: expectedLogs,
-		}
+		mock := newMockClient(&mockClientState{
+			logs: expectedLogs,
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		jobID := int64(200)
 
@@ -203,15 +197,15 @@ func TestFetchLogs(t *testing.T) {
 		if result.Err != nil {
 			t.Errorf("expected no error, got %v", result.Err)
 		}
-		if mock.CallCount("GetJobLogs") != 1 {
-			t.Errorf("expected 1 call to GetJobLogs, got %d", mock.CallCount("GetJobLogs"))
+		if len(mock.GetJobLogsCalls()) != 1 {
+			t.Errorf("expected 1 call to GetJobLogs, got %d", len(mock.GetJobLogsCalls()))
 		}
 	})
 
 	t.Run("returns error on failure", func(t *testing.T) {
-		mock := &github.MockClient{
-			Err: errors.New("logs not available"),
-		}
+		mock := newMockClient(&mockClientState{
+			err: errors.New("logs not available"),
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 
 		cmd := fetchLogs(mock, repo, 200)
@@ -229,7 +223,7 @@ func TestFetchLogs(t *testing.T) {
 
 func TestCancelRun(t *testing.T) {
 	t.Run("cancels run successfully", func(t *testing.T) {
-		mock := &github.MockClient{}
+		mock := newMockClient(nil)
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		runID := int64(12345)
 
@@ -246,15 +240,15 @@ func TestCancelRun(t *testing.T) {
 		if result.Err != nil {
 			t.Errorf("expected no error, got %v", result.Err)
 		}
-		if mock.CallCount("CancelRun") != 1 {
-			t.Errorf("expected 1 call to CancelRun, got %d", mock.CallCount("CancelRun"))
+		if len(mock.CancelRunCalls()) != 1 {
+			t.Errorf("expected 1 call to CancelRun, got %d", len(mock.CancelRunCalls()))
 		}
 	})
 
 	t.Run("returns error on failure", func(t *testing.T) {
-		mock := &github.MockClient{
-			Err: errors.New("cannot cancel completed run"),
-		}
+		mock := newMockClient(&mockClientState{
+			err: errors.New("cannot cancel completed run"),
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		runID := int64(12345)
 
@@ -276,7 +270,7 @@ func TestCancelRun(t *testing.T) {
 
 func TestRerunWorkflow(t *testing.T) {
 	t.Run("reruns workflow successfully", func(t *testing.T) {
-		mock := &github.MockClient{}
+		mock := newMockClient(nil)
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		runID := int64(67890)
 
@@ -293,15 +287,15 @@ func TestRerunWorkflow(t *testing.T) {
 		if result.Err != nil {
 			t.Errorf("expected no error, got %v", result.Err)
 		}
-		if mock.CallCount("RerunWorkflow") != 1 {
-			t.Errorf("expected 1 call to RerunWorkflow, got %d", mock.CallCount("RerunWorkflow"))
+		if len(mock.RerunWorkflowCalls()) != 1 {
+			t.Errorf("expected 1 call to RerunWorkflow, got %d", len(mock.RerunWorkflowCalls()))
 		}
 	})
 
 	t.Run("returns error on failure", func(t *testing.T) {
-		mock := &github.MockClient{
-			Err: errors.New("rerun failed"),
-		}
+		mock := newMockClient(&mockClientState{
+			err: errors.New("rerun failed"),
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		runID := int64(67890)
 
@@ -323,7 +317,7 @@ func TestRerunWorkflow(t *testing.T) {
 
 func TestRerunFailedJobs(t *testing.T) {
 	t.Run("reruns failed jobs successfully", func(t *testing.T) {
-		mock := &github.MockClient{}
+		mock := newMockClient(nil)
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		runID := int64(11111)
 
@@ -340,15 +334,15 @@ func TestRerunFailedJobs(t *testing.T) {
 		if result.Err != nil {
 			t.Errorf("expected no error, got %v", result.Err)
 		}
-		if mock.CallCount("RerunFailedJobs") != 1 {
-			t.Errorf("expected 1 call to RerunFailedJobs, got %d", mock.CallCount("RerunFailedJobs"))
+		if len(mock.RerunFailedJobsCalls()) != 1 {
+			t.Errorf("expected 1 call to RerunFailedJobs, got %d", len(mock.RerunFailedJobsCalls()))
 		}
 	})
 
 	t.Run("returns error on failure", func(t *testing.T) {
-		mock := &github.MockClient{
-			Err: errors.New("no failed jobs to rerun"),
-		}
+		mock := newMockClient(&mockClientState{
+			err: errors.New("no failed jobs to rerun"),
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		runID := int64(11111)
 
@@ -370,7 +364,7 @@ func TestRerunFailedJobs(t *testing.T) {
 
 func TestTriggerWorkflow(t *testing.T) {
 	t.Run("triggers workflow successfully", func(t *testing.T) {
-		mock := &github.MockClient{}
+		mock := newMockClient(nil)
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 		workflowFile := "deploy.yml"
 		ref := "main"
@@ -389,26 +383,23 @@ func TestTriggerWorkflow(t *testing.T) {
 		if result.Err != nil {
 			t.Errorf("expected no error, got %v", result.Err)
 		}
-		if mock.CallCount("TriggerWorkflow") != 1 {
-			t.Errorf("expected 1 call to TriggerWorkflow, got %d", mock.CallCount("TriggerWorkflow"))
+		if len(mock.TriggerWorkflowCalls()) != 1 {
+			t.Errorf("expected 1 call to TriggerWorkflow, got %d", len(mock.TriggerWorkflowCalls()))
 		}
 
 		// Verify the inputs were passed correctly
-		calls := mock.Calls()
+		calls := mock.TriggerWorkflowCalls()
 		if len(calls) == 0 {
 			t.Fatal("expected calls to be recorded")
 		}
-		passedInputs, ok := calls[0].Args[3].(map[string]interface{})
-		if !ok {
-			t.Fatalf("expected map[string]interface{}, got %T", calls[0].Args[3])
-		}
+		passedInputs := calls[0].Inputs
 		if passedInputs["environment"] != "production" {
 			t.Errorf("expected input 'environment' to be 'production', got %v", passedInputs["environment"])
 		}
 	})
 
 	t.Run("triggers workflow with nil inputs", func(t *testing.T) {
-		mock := &github.MockClient{}
+		mock := newMockClient(nil)
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 
 		cmd := triggerWorkflow(mock, repo, "ci.yml", "main", nil)
@@ -424,9 +415,9 @@ func TestTriggerWorkflow(t *testing.T) {
 	})
 
 	t.Run("returns error on failure", func(t *testing.T) {
-		mock := &github.MockClient{
-			Err: errors.New("workflow not found"),
-		}
+		mock := newMockClient(&mockClientState{
+			err: errors.New("workflow not found"),
+		})
 		repo := github.Repository{Owner: "owner", Name: "repo"}
 
 		cmd := triggerWorkflow(mock, repo, "missing.yml", "main", nil)
@@ -482,7 +473,7 @@ func TestTick(t *testing.T) {
 
 // TestCommandsAreFunctions verifies that all commands return tea.Cmd types
 func TestCommandsAreFunctions(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	repo := github.Repository{Owner: "owner", Name: "repo"}
 
 	// All these should compile and return tea.Cmd
@@ -541,12 +532,12 @@ func TestCommandsAreFunctions(t *testing.T) {
 
 // TestConcurrentCommandExecution verifies commands can be safely executed concurrently
 func TestConcurrentCommandExecution(t *testing.T) {
-	mock := &github.MockClient{
-		Workflows: []github.Workflow{{ID: 1, Name: "CI"}},
-		Runs:      []github.Run{{ID: 100, Name: "CI"}},
-		Jobs:      []github.Job{{ID: 200, Name: "build"}},
-		Logs:      "test logs",
-	}
+	mock := newMockClient(&mockClientState{
+		workflows: []github.Workflow{{ID: 1, Name: "CI"}},
+		runs:      []github.Run{{ID: 100, Name: "CI"}},
+		jobs:      []github.Job{{ID: 200, Name: "build"}},
+		logs:      "test logs",
+	})
 	repo := github.Repository{Owner: "owner", Name: "repo"}
 
 	// Create multiple commands
@@ -610,7 +601,7 @@ func TestConcurrentCommandExecution(t *testing.T) {
 
 // TestValueCapture verifies that commands capture values correctly
 func TestValueCapture(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	repo := github.Repository{Owner: "owner", Name: "repo"}
 
 	// Create commands with specific values

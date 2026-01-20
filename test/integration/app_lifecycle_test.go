@@ -75,8 +75,8 @@ func TestAppLifecycle_StartupSequence(t *testing.T) {
 		ta.App.Update(msg)
 
 		// Verify workflows are loaded
-		if ta.Mock().CallCount("ListWorkflows") < 0 {
-			// Workflows should be set via the msg
+		if len(ta.Mock().ListWorkflowsCalls()) != 0 {
+			t.Error("ListWorkflows should not be called when workflows are injected via message")
 		}
 	})
 

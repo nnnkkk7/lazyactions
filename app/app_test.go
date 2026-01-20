@@ -32,7 +32,7 @@ func TestNew_CreatesApp(t *testing.T) {
 }
 
 func TestNew_WithClient(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 
 	if app.client != mock {
@@ -949,7 +949,7 @@ func TestApp_StopLogPolling(t *testing.T) {
 }
 
 func TestApp_OnRunSelectionChange(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 	app.runs.SetItems([]github.Run{
 		{ID: 1, Name: "Run 1"},
@@ -962,7 +962,7 @@ func TestApp_OnRunSelectionChange(t *testing.T) {
 }
 
 func TestApp_OnJobSelectionChange(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 	app.jobs.SetItems([]github.Job{
 		{ID: 1, Name: "build"},
@@ -975,7 +975,7 @@ func TestApp_OnJobSelectionChange(t *testing.T) {
 }
 
 func TestApp_NavigateDownInRunsPane(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 	app.focusedPane = RunsPane
 	app.runs.SetItems([]github.Run{
@@ -991,7 +991,7 @@ func TestApp_NavigateDownInRunsPane(t *testing.T) {
 }
 
 func TestApp_NavigateUpInJobsPane(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 	app.focusedPane = JobsPane
 	app.jobs.SetItems([]github.Job{
@@ -1038,7 +1038,7 @@ func TestApp_ApplyFilterOnJobsPane(t *testing.T) {
 }
 
 func TestApp_FetchCmds_WithClient(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 
 	// These should return commands when client is set
@@ -1057,7 +1057,7 @@ func TestApp_FetchCmds_WithClient(t *testing.T) {
 }
 
 func TestApp_RerunWorkflow_WithSelection(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 	app.runs.SetItems([]github.Run{
 		{ID: 1, Name: "Run 1"},
@@ -1070,7 +1070,7 @@ func TestApp_RerunWorkflow_WithSelection(t *testing.T) {
 }
 
 func TestApp_RerunFailedJobs_WithFailedRun(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 	app.runs.SetItems([]github.Run{
 		{ID: 1, Status: "completed", Conclusion: "failure"},
@@ -1083,7 +1083,7 @@ func TestApp_RerunFailedJobs_WithFailedRun(t *testing.T) {
 }
 
 func TestApp_RefreshCurrentWorkflow_WithSelection(t *testing.T) {
-	mock := &github.MockClient{}
+	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 	app.workflows.SetItems([]github.Workflow{
 		{ID: 1, Name: "CI"},
