@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.0.9](https://github.com/nnnkkk7/lazyactions/compare/v0.0.8...v0.0.9) - 2026-01-20
+- chore: update gif by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/41
+- feat: introduce moq by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/40
+- chore: update demo by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/44
+- feat: add syntax highlighting for log lines and implement related tests by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/43
+
 ## [v0.0.8](https://github.com/nnnkkk7/lazyactions/compare/v0.0.7...v0.0.8) - 2026-01-20
 - chore: fix ignore path by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/36
 - feat: implement step navigation and log parsing for detail panel by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/38
