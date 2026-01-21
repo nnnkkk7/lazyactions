@@ -5,6 +5,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// Scroll constants
+const (
+	// ScrollLineCount is the number of lines to scroll per scroll action
+	ScrollLineCount = 1
+)
+
 // LogViewport wraps a viewport with autoscroll functionality.
 // It automatically scrolls to the bottom when new content is added,
 // unless the user has manually scrolled up.
@@ -65,13 +71,13 @@ func (lv *LogViewport) isAtBottom() bool {
 
 // ScrollUp scrolls the viewport up by one line.
 func (lv *LogViewport) ScrollUp() {
-	lv.viewport.ScrollUp(1)
+	lv.viewport.ScrollUp(ScrollLineCount)
 	lv.autoscroll = false
 }
 
 // ScrollDown scrolls the viewport down by one line.
 func (lv *LogViewport) ScrollDown() {
-	lv.viewport.ScrollDown(1)
+	lv.viewport.ScrollDown(ScrollLineCount)
 	lv.autoscroll = lv.isAtBottom()
 }
 

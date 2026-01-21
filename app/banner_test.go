@@ -5,7 +5,7 @@ import (
 )
 
 func TestPrintBanner_NoPanic(t *testing.T) {
-	// PrintBanner がパニックしないことを確認
+	// Verify that PrintBanner does not panic
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("PrintBanner panicked: %v", r)
@@ -15,14 +15,14 @@ func TestPrintBanner_NoPanic(t *testing.T) {
 }
 
 func TestBannerStyle_NotNil(t *testing.T) {
-	// BannerStyle が正しく初期化されていることを確認
+	// Verify that BannerStyle is properly initialized
 	if BannerStyle.GetForeground() == nil {
 		t.Error("BannerStyle foreground color should not be nil")
 	}
 }
 
 func TestBannerArt_NotEmpty(t *testing.T) {
-	// bannerArt が空でないことを確認
+	// Verify that bannerArt is not empty
 	if bannerArt == "" {
 		t.Error("bannerArt should not be empty")
 	}

@@ -7,7 +7,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// ASCIIアートバナー
+// Banner timing constant
+const (
+	// BannerDisplayDelay is the delay after showing the banner
+	BannerDisplayDelay = 500 * time.Millisecond
+)
+
+// ASCII art banner
 const bannerArt = `
  _                      _        _   _
 | |    __ _ _____   _  / \   ___| |_(_) ___  _ __  ___
@@ -23,5 +29,5 @@ var BannerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FFFF"))
 // PrintBanner prints the ASCII art banner in cyan with a brief delay
 func PrintBanner() {
 	fmt.Println(BannerStyle.Render(bannerArt))
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(BannerDisplayDelay)
 }

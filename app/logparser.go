@@ -131,8 +131,8 @@ func FormatLogLine(line string) string {
 	return timeOnly + " " + rest
 }
 
-// FormatStepLogs formats all lines in the logs with simplified timestamps
-func (p *ParsedLogs) FormatStepLogs(stepIndex int) string {
+// formatStepLogsWithFunc formats all lines in the logs using the provided formatter function
+func (p *ParsedLogs) formatStepLogsWithFunc(stepIndex int, formatter func(string) string) string {
 	logs := p.GetStepLogs(stepIndex)
 	if logs == "" {
 		return ""
@@ -141,9 +141,14 @@ func (p *ParsedLogs) FormatStepLogs(stepIndex int) string {
 	lines := strings.Split(logs, "\n")
 	formatted := make([]string, len(lines))
 	for i, line := range lines {
-		formatted[i] = FormatLogLine(line)
+		formatted[i] = formatter(line)
 	}
 	return strings.Join(formatted, "\n")
+}
+
+// FormatStepLogs formats all lines in the logs with simplified timestamps
+func (p *ParsedLogs) FormatStepLogs(stepIndex int) string {
+	return p.formatStepLogsWithFunc(stepIndex, FormatLogLine)
 }
 
 // GitHub Actions marker regexes
@@ -237,15 +242,5 @@ func highlightKeywords(text string) string {
 
 // FormatStepLogsWithColor formats all lines with syntax highlighting
 func (p *ParsedLogs) FormatStepLogsWithColor(stepIndex int) string {
-	logs := p.GetStepLogs(stepIndex)
-	if logs == "" {
-		return ""
-	}
-
-	lines := strings.Split(logs, "\n")
-	formatted := make([]string, len(lines))
-	for i, line := range lines {
-		formatted[i] = FormatLogLineWithColor(line)
-	}
-	return strings.Join(formatted, "\n")
+	return p.formatStepLogsWithFunc(stepIndex, FormatLogLineWithColor)
 }

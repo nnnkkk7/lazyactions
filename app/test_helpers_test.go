@@ -2,9 +2,13 @@ package app
 
 import (
 	"context"
+	"errors"
 
 	"github.com/nnnkkk7/lazyactions/github"
 )
+
+// errAPI is a test error used to simulate API errors
+var errAPI = errors.New("API error")
 
 type mockClientState struct {
 	workflows []github.Workflow
