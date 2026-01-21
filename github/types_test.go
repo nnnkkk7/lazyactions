@@ -135,6 +135,7 @@ func TestRun_Fields(t *testing.T) {
 	createdAt := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
 	r := Run{
 		ID:         100,
+		RunNumber:  21,
 		Name:       "CI",
 		Status:     "completed",
 		Conclusion: "success",
@@ -147,6 +148,9 @@ func TestRun_Fields(t *testing.T) {
 
 	if r.ID != 100 {
 		t.Errorf("Run.ID = %v, want 100", r.ID)
+	}
+	if r.RunNumber != 21 {
+		t.Errorf("Run.RunNumber = %v, want 21", r.RunNumber)
 	}
 	if r.Name != "CI" {
 		t.Errorf("Run.Name = %v, want CI", r.Name)

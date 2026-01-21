@@ -218,6 +218,7 @@ func convertRuns(ghRuns []*github.WorkflowRun) []Run {
 	for _, r := range ghRuns {
 		result = append(result, Run{
 			ID:         r.GetID(),
+			RunNumber:  r.GetRunNumber(),
 			Name:       r.GetName(),
 			Status:     r.GetStatus(),
 			Conclusion: r.GetConclusion(),

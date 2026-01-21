@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -62,7 +63,7 @@ func (a *App) buildRunsPanel(width, height int) []string {
 			selected := i == a.runs.SelectedIndex()
 			hovered := a.mouseX < leftWidth && a.mouseY == panelStartY+i+BorderOffset
 			icon := StatusIcon(run.Status, run.Conclusion)
-			line := icon + " #" + formatRunNumber(run.ID) + " " + run.Branch
+			line := icon + " #" + strconv.Itoa(run.RunNumber) + " " + run.Event + " " + run.Branch
 			line = truncateString(line, width-ItemPaddingSmall)
 			content = append(content, a.renderListItem(line, selected, focused, hovered))
 		}
@@ -144,7 +145,7 @@ func (a *App) buildInfoContent(maxWidth int) []string {
 		if run, ok := a.runs.Selected(); ok {
 			content = append(content, "  Run Information")
 			content = append(content, "  "+strings.Repeat("─", 30))
-			content = append(content, "  ID:     #"+formatRunNumber(run.ID))
+			content = append(content, "  Run:    #"+strconv.Itoa(run.RunNumber))
 			content = append(content, "  Status: "+StatusIcon(run.Status, run.Conclusion)+" "+run.Status)
 			if run.Conclusion != "" {
 				content = append(content, "  Result: "+run.Conclusion)
