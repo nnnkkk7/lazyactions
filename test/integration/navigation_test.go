@@ -245,7 +245,7 @@ func TestNavigation_SelectionTriggersDataLoad(t *testing.T) {
 		}
 	})
 
-	t.Run("selecting job triggers fetchLogs", func(t *testing.T) {
+	t.Run("selecting completed job triggers fetchLogs", func(t *testing.T) {
 		ta := NewTestApp(t,
 			WithMockWorkflows(DefaultTestWorkflows()),
 			WithMockRuns(DefaultTestRuns()),
@@ -257,13 +257,15 @@ func TestNavigation_SelectionTriggersDataLoad(t *testing.T) {
 		ta.App.Update(app.RunsLoadedMsg{Runs: DefaultTestRuns()})
 		ta.App.Update(app.JobsLoadedMsg{Jobs: DefaultTestJobs()})
 
-		// Move to Jobs pane using j (panel navigation) and navigate in list with arrow
+		// Move to Jobs pane and navigate to third job (completed "lint" job)
+		// DefaultTestJobs: [0]=completed, [1]=in_progress, [2]=completed
 		ta.SendKey("j")
 		ta.SendKey("j")
+		ta.SendKey("down") // Skip in_progress job
 		cmd := ta.SendKey("down")
 
 		if cmd == nil {
-			t.Error("Selection change should trigger a command")
+			t.Error("Selecting completed job should trigger fetchLogs command")
 		}
 	})
 }

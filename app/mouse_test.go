@@ -227,12 +227,61 @@ func TestApp_OnJobSelectionChange(t *testing.T) {
 	mock := newMockClient(nil)
 	app := New(WithClient(mock))
 	app.jobs.SetItems([]github.Job{
-		{ID: 1, Name: "build"},
+		{ID: 1, Name: "build", Status: "completed"},
 	})
 
 	cmd := app.onJobSelectionChange()
 	if cmd == nil {
-		t.Error("onJobSelectionChange should return a command when job is selected")
+		t.Error("onJobSelectionChange should return a command when job is completed")
+	}
+}
+
+func TestApp_OnJobSelectionChange_QueuedJob(t *testing.T) {
+	mock := newMockClient(nil)
+	app := New(WithClient(mock))
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build", Status: "queued"},
+	})
+
+	cmd := app.onJobSelectionChange()
+	if cmd != nil {
+		t.Error("onJobSelectionChange should return nil for queued job")
+	}
+	// Check that appropriate message is shown
+	content := app.logView.View()
+	if content == "" {
+		t.Error("logView should have content for queued job")
+	}
+}
+
+func TestApp_OnJobSelectionChange_InProgressJob(t *testing.T) {
+	mock := newMockClient(nil)
+	app := New(WithClient(mock))
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build", Status: "in_progress"},
+	})
+
+	cmd := app.onJobSelectionChange()
+	if cmd != nil {
+		t.Error("onJobSelectionChange should return nil for in_progress job")
+	}
+	// Check that appropriate message is shown
+	content := app.logView.View()
+	if content == "" {
+		t.Error("logView should have content for in_progress job")
+	}
+}
+
+func TestApp_OnJobSelectionChange_CompletedJob(t *testing.T) {
+	mock := newMockClient(nil)
+	app := New(WithClient(mock))
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build", Status: "completed"},
+	})
+
+	cmd := app.onJobSelectionChange()
+	if cmd == nil {
+		t.Error("onJobSelectionChange should return a command for completed job")
 	}
 }
 

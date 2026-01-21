@@ -2,6 +2,7 @@ package app
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/nnnkkk7/lazyactions/github"
 )
 
 // handleMouseEvent handles mouse events
@@ -185,16 +186,32 @@ func (a *App) onRunSelectionChange() tea.Cmd {
 
 // onJobSelectionChange handles job selection change
 func (a *App) onJobSelectionChange() tea.Cmd {
-	if job, ok := a.jobs.Selected(); ok {
-		// Clear current logs and show loading state while fetching new logs
-		a.logView.SetContent("Loading logs...")
-		// Reset step selection for new job
-		a.parsedLogs = nil
-		a.selectedStepIdx = -1
-		a.stepListFocused = true
-		return a.fetchLogsCmd(job.ID)
+	job, ok := a.jobs.Selected()
+	if !ok {
+		return nil
 	}
-	return nil
+
+	// Reset step selection for new job
+	a.parsedLogs = nil
+	a.selectedStepIdx = -1
+	a.stepListFocused = true
+
+	// GitHub API only provides logs for completed jobs
+	if !job.IsCompleted() {
+		a.logView.SetContent(jobStatusMessage(job))
+		return nil
+	}
+
+	a.logView.SetContent("Loading logs...")
+	return a.fetchLogsCmd(job.ID)
+}
+
+// jobStatusMessage returns a user-friendly message for incomplete jobs
+func jobStatusMessage(job github.Job) string {
+	if job.IsQueued() {
+		return "Job is queued.\nLogs will be available when job starts."
+	}
+	return "Job is running...\nLogs will be available when complete."
 }
 
 // updateLogViewContent updates the log view with the currently selected step's logs

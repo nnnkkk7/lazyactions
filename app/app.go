@@ -284,9 +284,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.err = msg.Err
 		} else {
 			a.jobs.SetItems(msg.Jobs)
-			if a.jobs.Len() > 0 {
-				if job, ok := a.jobs.Selected(); ok {
+			if job, ok := a.jobs.Selected(); ok {
+				// GitHub API only provides logs for completed jobs
+				if job.IsCompleted() && a.parsedLogs == nil {
 					cmds = append(cmds, a.fetchLogsCmd(job.ID))
+				} else if !job.IsCompleted() {
+					a.logView.SetContent(jobStatusMessage(job))
 				}
 			}
 		}
@@ -294,17 +297,23 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case LogsLoadedMsg:
 		// Only update logs if they are for the currently selected job
 		// This prevents stale logs from overwriting newer ones
-		if job, ok := a.jobs.Selected(); ok && job.ID == msg.JobID {
-			if msg.Err != nil {
-				a.err = msg.Err
+		job, ok := a.jobs.Selected()
+		if !ok || job.ID != msg.JobID {
+			break
+		}
+
+		if msg.Err != nil {
+			a.parsedLogs = nil
+			// Don't show error for incomplete jobs - logs aren't available yet
+			if job.IsCompleted() {
 				a.logView.SetContent("Failed to load logs")
-				a.parsedLogs = nil
 			} else {
-				// Parse logs into steps
-				a.parsedLogs = ParseLogs(msg.Logs)
-				// Update log view with selected step's logs (formatted)
-				a.updateLogViewContent()
+				a.logView.SetContent("Waiting for job to complete...")
 			}
+			// Don't set a.err - avoid showing error in status bar
+		} else {
+			a.parsedLogs = ParseLogs(msg.Logs)
+			a.updateLogViewContent()
 		}
 
 	case RunCancelledMsg:

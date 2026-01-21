@@ -54,6 +54,16 @@ type Job struct {
 	Steps      []Step
 }
 
+// IsCompleted returns true if the job has completed.
+func (j Job) IsCompleted() bool {
+	return j.Status == "completed"
+}
+
+// IsQueued returns true if the job is queued.
+func (j Job) IsQueued() bool {
+	return j.Status == "queued"
+}
+
 // Step represents a step within a job.
 type Step struct {
 	Name       string

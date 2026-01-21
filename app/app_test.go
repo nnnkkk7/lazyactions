@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -189,7 +190,7 @@ func TestApp_Update_JobsLoadedMsg(t *testing.T) {
 	app := New()
 
 	jobs := []github.Job{
-		{ID: 1, Name: "build"},
+		{ID: 1, Name: "build", Status: "completed"},
 	}
 	msg := JobsLoadedMsg{Jobs: jobs}
 	model, _ := app.Update(msg)
@@ -200,9 +201,47 @@ func TestApp_Update_JobsLoadedMsg(t *testing.T) {
 	}
 }
 
+func TestApp_Update_JobsLoadedMsg_QueuedJob(t *testing.T) {
+	app := New()
+
+	jobs := []github.Job{
+		{ID: 1, Name: "build", Status: "queued"},
+	}
+	msg := JobsLoadedMsg{Jobs: jobs}
+	model, _ := app.Update(msg)
+	updated := model.(*App)
+
+	if updated.jobs.Len() != 1 {
+		t.Errorf("jobs.Len() = %d, want 1", updated.jobs.Len())
+	}
+	// parsedLogs should be nil for queued job (no logs fetched)
+	if updated.parsedLogs != nil {
+		t.Error("parsedLogs should be nil for queued job")
+	}
+}
+
+func TestApp_Update_JobsLoadedMsg_InProgressJob(t *testing.T) {
+	app := New()
+
+	jobs := []github.Job{
+		{ID: 1, Name: "build", Status: "in_progress"},
+	}
+	msg := JobsLoadedMsg{Jobs: jobs}
+	model, _ := app.Update(msg)
+	updated := model.(*App)
+
+	if updated.jobs.Len() != 1 {
+		t.Errorf("jobs.Len() = %d, want 1", updated.jobs.Len())
+	}
+	// parsedLogs should be nil for in_progress job (no logs fetched)
+	if updated.parsedLogs != nil {
+		t.Error("parsedLogs should be nil for in_progress job")
+	}
+}
+
 func TestApp_Update_LogsLoadedMsg(t *testing.T) {
 	app := New()
-	app.jobs.SetItems([]github.Job{{ID: 1, Name: "build"}})
+	app.jobs.SetItems([]github.Job{{ID: 1, Name: "build", Status: "completed"}})
 
 	msg := LogsLoadedMsg{JobID: 1, Logs: "test logs"}
 	model, _ := app.Update(msg)
@@ -210,6 +249,34 @@ func TestApp_Update_LogsLoadedMsg(t *testing.T) {
 
 	if updated.parsedLogs == nil {
 		t.Error("parsedLogs should be set after logs loaded")
+	}
+}
+
+func TestApp_Update_LogsLoadedMsg_ErrorForIncompleteJob(t *testing.T) {
+	app := New()
+	app.jobs.SetItems([]github.Job{{ID: 1, Name: "build", Status: "in_progress"}})
+
+	msg := LogsLoadedMsg{JobID: 1, Logs: "", Err: errors.New("not found")}
+	model, _ := app.Update(msg)
+	updated := model.(*App)
+
+	// Should not set a.err for incomplete job
+	if updated.err != nil {
+		t.Error("err should be nil for incomplete job")
+	}
+}
+
+func TestApp_Update_LogsLoadedMsg_ErrorForCompletedJob(t *testing.T) {
+	app := New()
+	app.jobs.SetItems([]github.Job{{ID: 1, Name: "build", Status: "completed"}})
+
+	msg := LogsLoadedMsg{JobID: 1, Logs: "", Err: errors.New("not found")}
+	model, _ := app.Update(msg)
+	updated := model.(*App)
+
+	// Should not set a.err (we changed this behavior)
+	if updated.err != nil {
+		t.Error("err should be nil even for completed job error")
 	}
 }
 
