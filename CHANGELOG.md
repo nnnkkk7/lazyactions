@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.0.11](https://github.com/nnnkkk7/lazyactions/compare/v0.0.10...v0.0.11) - 2026-01-21
+- refactor: split the file and define constants by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/49
+- feat: add run number and event details to workflow runs display by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/51
+- feat: enhance job handling and logging behavior by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/52
+- chore: update demo by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/53
+
 ## [v0.0.10](https://github.com/nnnkkk7/lazyactions/compare/v0.0.9...v0.0.10) - 2026-01-20
 - feat: enhance UI with new banner and panel styles by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/45
 - refactor: replace border rendering logic by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/47
