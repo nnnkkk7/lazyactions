@@ -49,9 +49,13 @@ func fetchJobs(client github.Client, repo github.Repository, runID int64) tea.Cm
 
 // fetchLogs creates a command to fetch logs for a job.
 // It captures the client, repo, and jobID to avoid race conditions.
+// Logs are sanitized to remove potential secrets before display.
 func fetchLogs(client github.Client, repo github.Repository, jobID int64) tea.Cmd {
 	return func() tea.Msg {
 		logs, err := client.GetJobLogs(context.Background(), repo, jobID)
+		if err == nil {
+			logs = github.SanitizeLogs(logs)
+		}
 		return LogsLoadedMsg{
 			JobID: jobID,
 			Logs:  logs,

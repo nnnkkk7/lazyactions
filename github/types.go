@@ -8,11 +8,6 @@ type Repository struct {
 	Name  string
 }
 
-// FullName returns the full repository name in the format "owner/name".
-func (r Repository) FullName() string {
-	return r.Owner + "/" + r.Name
-}
-
 // Workflow represents a GitHub Actions workflow definition.
 type Workflow struct {
 	ID    int64
@@ -70,11 +65,6 @@ type Step struct {
 	Status     string // queued, in_progress, completed
 	Conclusion string // success, failure, skipped
 	Number     int
-}
-
-// IsFailed returns true if the step has failed.
-func (s Step) IsFailed() bool {
-	return s.Conclusion == "failure"
 }
 
 // ListRunsOpts represents options for listing workflow runs.

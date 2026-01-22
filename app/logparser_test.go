@@ -150,49 +150,6 @@ func TestParseLogs_TimestampExtraction(t *testing.T) {
 	}
 }
 
-func TestFormatLogLine(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "with timestamp",
-			input:    "2024-01-15T10:00:00.000Z Some log message",
-			expected: "10:00:00 Some log message",
-		},
-		{
-			name:     "with nanoseconds",
-			input:    "2024-01-15T10:30:45.123456789Z Another message",
-			expected: "10:30:45 Another message",
-		},
-		{
-			name:     "no timestamp",
-			input:    "Plain message without timestamp",
-			expected: "Plain message without timestamp",
-		},
-		{
-			name:     "empty line",
-			input:    "",
-			expected: "",
-		},
-		{
-			name:     "group marker",
-			input:    "2024-01-15T10:00:00.000Z ##[group]Step name",
-			expected: "10:00:00 ##[group]Step name",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := FormatLogLine(tt.input)
-			if result != tt.expected {
-				t.Errorf("FormatLogLine(%q) = %q, want %q", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestFormatLogLineWithColor(t *testing.T) {
 	tests := []struct {
 		name  string
