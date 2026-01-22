@@ -78,6 +78,8 @@ export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 # Required scopes: repo, workflow
 ```
 
+> **Note:** GitHub Enterprise is not currently supported. Only `github.com` repositories are supported at this time.
+
 ## Usage
 
 ```bash
