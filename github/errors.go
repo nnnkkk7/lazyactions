@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -113,4 +114,34 @@ func IsRetryable(err error) bool {
 		return appErr.Retryable
 	}
 	return false
+}
+
+// RetryWithBackoff executes fn with exponential backoff retry for retryable errors.
+// It retries up to maxRetries times with exponential backoff starting at 1 second.
+// Maximum backoff is capped at 30 seconds.
+func RetryWithBackoff(ctx context.Context, maxRetries int, fn func() error) error {
+	var lastErr error
+	backoff := time.Second
+
+	for i := 0; i <= maxRetries; i++ {
+		lastErr = fn()
+		if lastErr == nil {
+			return nil
+		}
+		if !IsRetryable(lastErr) {
+			return lastErr
+		}
+		if i < maxRetries {
+			select {
+			case <-time.After(backoff):
+				backoff = backoff * 2
+				if backoff > 30*time.Second {
+					backoff = 30 * time.Second
+				}
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+	}
+	return lastErr
 }

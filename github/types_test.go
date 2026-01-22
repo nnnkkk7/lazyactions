@@ -5,39 +5,6 @@ import (
 	"time"
 )
 
-func TestRepository_FullName(t *testing.T) {
-	tests := []struct {
-		name string
-		repo Repository
-		want string
-	}{
-		{
-			name: "standard repository",
-			repo: Repository{Owner: "owner", Name: "repo"},
-			want: "owner/repo",
-		},
-		{
-			name: "organization repository",
-			repo: Repository{Owner: "my-org", Name: "my-project"},
-			want: "my-org/my-project",
-		},
-		{
-			name: "empty values",
-			repo: Repository{Owner: "", Name: ""},
-			want: "/",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := tt.repo.FullName()
-			if got != tt.want {
-				t.Errorf("Repository.FullName() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestRun_IsRunning(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -81,29 +48,6 @@ func TestRun_IsFailed(t *testing.T) {
 			got := r.IsFailed()
 			if got != tt.want {
 				t.Errorf("Run.IsFailed() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestStep_IsFailed(t *testing.T) {
-	tests := []struct {
-		name       string
-		conclusion string
-		want       bool
-	}{
-		{name: "failure", conclusion: "failure", want: true},
-		{name: "success", conclusion: "success", want: false},
-		{name: "skipped", conclusion: "skipped", want: false},
-		{name: "empty", conclusion: "", want: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := Step{Conclusion: tt.conclusion}
-			got := s.IsFailed()
-			if got != tt.want {
-				t.Errorf("Step.IsFailed() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -209,8 +153,8 @@ func TestJob_Fields(t *testing.T) {
 	if j.Steps[0].Name != "Checkout" {
 		t.Errorf("Job.Steps[0].Name = %v, want Checkout", j.Steps[0].Name)
 	}
-	if !j.Steps[1].IsFailed() {
-		t.Errorf("Job.Steps[1].IsFailed() = false, want true")
+	if j.Steps[1].Conclusion != "failure" {
+		t.Errorf("Job.Steps[1].Conclusion = %v, want failure", j.Steps[1].Conclusion)
 	}
 }
 

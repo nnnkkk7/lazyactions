@@ -112,25 +112,6 @@ func (p *ParsedLogs) GetStepLogs(stepIndex int) string {
 	return strings.Join(p.Steps[stepIndex].Lines, "\n")
 }
 
-// FormatLogLine formats a single log line by simplifying the timestamp
-// Input: "2024-01-15T10:00:00.000Z Some message"
-// Output: "10:00:00 Some message"
-func FormatLogLine(line string) string {
-	if line == "" {
-		return ""
-	}
-
-	match := timestampRegex.FindStringSubmatch(line)
-	if match == nil {
-		return line
-	}
-
-	// match[1] is the full timestamp, match[2] is HH:MM:SS
-	timeOnly := match[2]
-	rest := strings.TrimPrefix(line, match[0])
-	return timeOnly + " " + rest
-}
-
 // formatStepLogsWithFunc formats all lines in the logs using the provided formatter function
 func (p *ParsedLogs) formatStepLogsWithFunc(stepIndex int, formatter func(string) string) string {
 	logs := p.GetStepLogs(stepIndex)
@@ -144,11 +125,6 @@ func (p *ParsedLogs) formatStepLogsWithFunc(stepIndex int, formatter func(string
 		formatted[i] = formatter(line)
 	}
 	return strings.Join(formatted, "\n")
-}
-
-// FormatStepLogs formats all lines in the logs with simplified timestamps
-func (p *ParsedLogs) FormatStepLogs(stepIndex int) string {
-	return p.formatStepLogsWithFunc(stepIndex, FormatLogLine)
 }
 
 // GitHub Actions marker regexes

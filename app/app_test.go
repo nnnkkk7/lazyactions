@@ -38,9 +38,6 @@ func TestNew_WithClient(t *testing.T) {
 	if app.client != mock {
 		t.Error("WithClient option not applied")
 	}
-	if app.adaptivePoller == nil {
-		t.Error("adaptivePoller should be created when client is set")
-	}
 }
 
 func TestNew_WithRepository(t *testing.T) {
@@ -308,23 +305,6 @@ func TestFormatRunNumber(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("formatRunNumber(%d) = %q, want %q", tt.id, got, tt.want)
 		}
-	}
-}
-
-func TestApp_StartLogPolling_NoClient(t *testing.T) {
-	// This test is skipped because StartLogPolling requires adaptivePoller to be set
-	// which requires a client
-	t.Skip("StartLogPolling requires adaptivePoller to be set")
-}
-
-func TestApp_StopLogPolling(t *testing.T) {
-	app := New()
-
-	// Should not panic when logPoller is nil
-	app.StopLogPolling()
-
-	if app.logPoller != nil {
-		t.Error("logPoller should remain nil")
 	}
 }
 

@@ -2,7 +2,6 @@
 package app
 
 import (
-	"context"
 	"strconv"
 	"strings"
 	"time"
@@ -108,10 +107,6 @@ type App struct {
 	height      int
 	logView     *LogViewport
 
-	// Polling
-	logPoller      *TickerTask
-	adaptivePoller *AdaptivePoller
-
 	// State
 	loading bool
 	err     error
@@ -211,12 +206,6 @@ func New(opts ...Option) *App {
 	// Set default clipboard if not provided
 	if a.clipboard == nil {
 		a.clipboard = &realClipboard{}
-	}
-
-	if a.client != nil {
-		a.adaptivePoller = NewAdaptivePoller(func() int {
-			return a.client.RateLimitRemaining()
-		})
 	}
 
 	return a
@@ -465,37 +454,6 @@ func (a *App) fetchLogsCmd(jobID int64) tea.Cmd {
 		return nil
 	}
 	return fetchLogs(a.client, a.repo, jobID)
-}
-
-// StartLogPolling starts log polling for a running job
-func (a *App) StartLogPolling(ctx context.Context) tea.Cmd {
-	if a.logPoller != nil {
-		a.logPoller.Stop()
-	}
-
-	interval := a.adaptivePoller.NextInterval()
-
-	a.logPoller = NewTickerTask(interval, func(ctx context.Context) tea.Msg {
-		job, ok := a.jobs.Selected()
-		if !ok {
-			return nil
-		}
-		logs, err := a.client.GetJobLogs(ctx, a.repo, job.ID)
-		if ctx.Err() != nil {
-			return nil
-		}
-		return LogsLoadedMsg{JobID: job.ID, Logs: logs, Err: err}
-	})
-
-	return a.logPoller.Start()
-}
-
-// StopLogPolling stops log polling
-func (a *App) StopLogPolling() {
-	if a.logPoller != nil {
-		a.logPoller.Stop()
-		a.logPoller = nil
-	}
 }
 
 // formatRunNumber formats a run ID for display
