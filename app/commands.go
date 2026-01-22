@@ -10,9 +10,15 @@ import (
 
 // fetchWorkflows creates a command to fetch workflows.
 // It captures the client and repo to avoid race conditions.
+// Retries on transient errors (rate limits, server errors).
 func fetchWorkflows(client github.Client, repo github.Repository) tea.Cmd {
 	return func() tea.Msg {
-		workflows, err := client.ListWorkflows(context.Background(), repo)
+		var workflows []github.Workflow
+		err := github.RetryWithBackoff(context.Background(), 3, func() error {
+			var e error
+			workflows, e = client.ListWorkflows(context.Background(), repo)
+			return e
+		})
 		return WorkflowsLoadedMsg{
 			Workflows: workflows,
 			Err:       err,
@@ -22,12 +28,18 @@ func fetchWorkflows(client github.Client, repo github.Repository) tea.Cmd {
 
 // fetchRuns creates a command to fetch runs for a workflow.
 // It captures the client, repo, and workflowID to avoid race conditions.
+// Retries on transient errors (rate limits, server errors).
 func fetchRuns(client github.Client, repo github.Repository, workflowID int64) tea.Cmd {
 	return func() tea.Msg {
 		opts := &github.ListRunsOpts{
 			WorkflowID: workflowID,
 		}
-		runs, err := client.ListRuns(context.Background(), repo, opts)
+		var runs []github.Run
+		err := github.RetryWithBackoff(context.Background(), 3, func() error {
+			var e error
+			runs, e = client.ListRuns(context.Background(), repo, opts)
+			return e
+		})
 		return RunsLoadedMsg{
 			Runs: runs,
 			Err:  err,
@@ -37,9 +49,15 @@ func fetchRuns(client github.Client, repo github.Repository, workflowID int64) t
 
 // fetchJobs creates a command to fetch jobs for a run.
 // It captures the client, repo, and runID to avoid race conditions.
+// Retries on transient errors (rate limits, server errors).
 func fetchJobs(client github.Client, repo github.Repository, runID int64) tea.Cmd {
 	return func() tea.Msg {
-		jobs, err := client.ListJobs(context.Background(), repo, runID)
+		var jobs []github.Job
+		err := github.RetryWithBackoff(context.Background(), 3, func() error {
+			var e error
+			jobs, e = client.ListJobs(context.Background(), repo, runID)
+			return e
+		})
 		return JobsLoadedMsg{
 			Jobs: jobs,
 			Err:  err,
@@ -50,9 +68,15 @@ func fetchJobs(client github.Client, repo github.Repository, runID int64) tea.Cm
 // fetchLogs creates a command to fetch logs for a job.
 // It captures the client, repo, and jobID to avoid race conditions.
 // Logs are sanitized to remove potential secrets before display.
+// Retries on transient errors (rate limits, server errors).
 func fetchLogs(client github.Client, repo github.Repository, jobID int64) tea.Cmd {
 	return func() tea.Msg {
-		logs, err := client.GetJobLogs(context.Background(), repo, jobID)
+		var logs string
+		err := github.RetryWithBackoff(context.Background(), 3, func() error {
+			var e error
+			logs, e = client.GetJobLogs(context.Background(), repo, jobID)
+			return e
+		})
 		if err == nil {
 			logs = github.SanitizeLogs(logs)
 		}
