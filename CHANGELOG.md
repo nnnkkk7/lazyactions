@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.12](https://github.com/nnnkkk7/lazyactions/compare/v0.0.11...v0.0.12) - 2026-01-22
+- refactor: remove unused functions by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/54
+- fix: use RetryWithBackoff by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/56
+- docs: update readme by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/57
+
 ## [v0.0.11](https://github.com/nnnkkk7/lazyactions/compare/v0.0.10...v0.0.11) - 2026-01-21
 - refactor: split the file and define constants by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/49
 - feat: add run number and event details to workflow runs display by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/51
