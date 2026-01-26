@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.0.13](https://github.com/nnnkkk7/lazyactions/compare/v0.0.12...v0.0.13) - 2026-01-26
+- ci: bump actions/checkout from 6.0.1 to 6.0.2 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/59
+- ci: bump Songmu/tagpr from 1.11.1 to 1.12.1 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/58
+
 ## [v0.0.12](https://github.com/nnnkkk7/lazyactions/compare/v0.0.11...v0.0.12) - 2026-01-22
 - refactor: remove unused functions by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/54
 - fix: use RetryWithBackoff by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/56
