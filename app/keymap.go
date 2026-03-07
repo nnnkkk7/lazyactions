@@ -26,6 +26,8 @@ type KeyMap struct {
 	Escape      key.Binding
 	InfoTab     key.Binding
 	LogsTab     key.Binding
+	JobUp       key.Binding
+	JobDown     key.Binding
 }
 
 // DefaultKeyMap returns the default keybindings
@@ -118,6 +120,14 @@ func DefaultKeyMap() KeyMap {
 		LogsTab: key.NewBinding(
 			key.WithKeys("2"),
 			key.WithHelp("2", "logs tab"),
+		),
+		JobUp: key.NewBinding(
+			key.WithKeys("w"),
+			key.WithHelp("w", "previous job"),
+		),
+		JobDown: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("s", "next job"),
 		),
 	}
 }

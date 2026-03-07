@@ -8,12 +8,14 @@ import (
 // It follows the lazydocker FilteredList[T] pattern for filterable lists
 // used in TUI applications.
 type FilteredList[T any] struct {
-	mu          sync.RWMutex
-	allItems    []T
-	filtered    []T
-	filter      string
-	selectedIdx int
-	matchFn     func(item T, filter string) bool
+	mu            sync.RWMutex
+	allItems      []T
+	filtered      []T
+	filter        string
+	selectedIdx   int
+	scrollOffset  int
+	visibleHeight int
+	matchFn       func(item T, filter string) bool
 }
 
 // NewFilteredList creates a new FilteredList with the provided match function.
@@ -73,6 +75,7 @@ func (l *FilteredList[T]) applyFilter() {
 
 	// Clamp selectedIdx to valid range
 	l.clampSelectedIndex()
+	l.clampScrollOffset()
 }
 
 // clampSelectedIndex ensures selectedIdx is within valid bounds.
@@ -88,6 +91,71 @@ func (l *FilteredList[T]) clampSelectedIndex() {
 	} else if l.selectedIdx < 0 {
 		l.selectedIdx = 0
 	}
+}
+
+// clampScrollOffset adjusts scrollOffset so the selected item is visible.
+// Must be called with the lock held.
+func (l *FilteredList[T]) clampScrollOffset() {
+	if l.visibleHeight <= 0 {
+		return
+	}
+	// If selected item is above the visible window, scroll up
+	if l.selectedIdx < l.scrollOffset {
+		l.scrollOffset = l.selectedIdx
+	}
+	// If selected item is below the visible window, scroll down
+	if l.selectedIdx >= l.scrollOffset+l.visibleHeight {
+		l.scrollOffset = l.selectedIdx - l.visibleHeight + 1
+	}
+	// Ensure offset is not negative
+	if l.scrollOffset < 0 {
+		l.scrollOffset = 0
+	}
+	// Ensure we don't scroll past the end
+	maxOffset := len(l.filtered) - l.visibleHeight
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	if l.scrollOffset > maxOffset {
+		l.scrollOffset = maxOffset
+	}
+}
+
+// SetVisibleHeight sets the number of items visible in the panel.
+// This is used to calculate the scroll offset.
+func (l *FilteredList[T]) SetVisibleHeight(h int) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.visibleHeight = h
+	l.clampScrollOffset()
+}
+
+// ScrollOffset returns the current scroll offset (index of the first visible item).
+func (l *FilteredList[T]) ScrollOffset() int {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	return l.scrollOffset
+}
+
+// VisibleItems returns the slice of items currently visible in the panel.
+func (l *FilteredList[T]) VisibleItems() []T {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	if len(l.filtered) == 0 {
+		return make([]T, 0)
+	}
+	start := l.scrollOffset
+	if start >= len(l.filtered) {
+		return make([]T, 0)
+	}
+	end := start + l.visibleHeight
+	if end > len(l.filtered) || l.visibleHeight <= 0 {
+		end = len(l.filtered)
+	}
+	return l.filtered[start:end]
 }
 
 // Items returns the filtered items.
@@ -127,6 +195,7 @@ func (l *FilteredList[T]) SelectNext() {
 	if l.selectedIdx < len(l.filtered)-1 {
 		l.selectedIdx++
 	}
+	l.clampScrollOffset()
 }
 
 // SelectPrev moves the selection to the previous item.
@@ -141,6 +210,7 @@ func (l *FilteredList[T]) SelectPrev() {
 	if l.selectedIdx > 0 {
 		l.selectedIdx--
 	}
+	l.clampScrollOffset()
 }
 
 // SelectedIndex returns the index of the currently selected item.
@@ -168,6 +238,7 @@ func (l *FilteredList[T]) Select(idx int) {
 	if idx >= 0 && idx < len(l.filtered) {
 		l.selectedIdx = idx
 	}
+	l.clampScrollOffset()
 }
 
 // Reset clears the filter and resets the selection to the first item.
@@ -177,5 +248,6 @@ func (l *FilteredList[T]) Reset() {
 
 	l.filter = ""
 	l.selectedIdx = 0
+	l.scrollOffset = 0
 	l.applyFilter()
 }

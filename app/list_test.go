@@ -529,7 +529,7 @@ func TestSelect_IgnoresNegativeIndex(t *testing.T) {
 		{Name: "Beta", ID: 2},
 	})
 
-	list.Select(1) // valid
+	list.Select(1)  // valid
 	list.Select(-1) // negative - should be ignored
 
 	if list.SelectedIndex() != 1 {
@@ -930,6 +930,558 @@ func TestFilteredList_SelectionPreservedOnRefilter(t *testing.T) {
 	idx := list.SelectedIndex()
 	if idx >= list.Len() {
 		t.Errorf("SelectedIndex() = %d, should be < %d", idx, list.Len())
+	}
+}
+
+// =============================================================================
+// SetVisibleHeight Tests
+// =============================================================================
+
+func TestSetVisibleHeight_SetsHeight(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+		{Name: "Gamma", ID: 3},
+	})
+
+	list.SetVisibleHeight(2)
+
+	// visibleHeight is not directly accessible, but we can verify via VisibleItems
+	items := list.VisibleItems()
+	if len(items) != 2 {
+		t.Errorf("VisibleItems() length = %d, want 2", len(items))
+	}
+}
+
+func TestSetVisibleHeight_ClampsScrollOffset(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+		{Name: "Gamma", ID: 3},
+		{Name: "Delta", ID: 4},
+		{Name: "Epsilon", ID: 5},
+	})
+
+	list.SetVisibleHeight(2)
+
+	// Navigate to last item so scrollOffset moves
+	list.Select(4) // scrollOffset should be 3 (4 - 2 + 1)
+
+	if list.ScrollOffset() != 3 {
+		t.Errorf("ScrollOffset() = %d, want 3", list.ScrollOffset())
+	}
+
+	// Increase visible height — should clamp scroll offset down
+	list.SetVisibleHeight(4) // maxOffset = 5 - 4 = 1
+
+	got := list.ScrollOffset()
+	if got > 1 {
+		t.Errorf("After increasing visibleHeight, ScrollOffset() = %d, want <= 1", got)
+	}
+}
+
+// =============================================================================
+// ScrollOffset Tests
+// =============================================================================
+
+func TestScrollOffset_InitiallyZero(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+	})
+
+	if list.ScrollOffset() != 0 {
+		t.Errorf("ScrollOffset() = %d, want 0", list.ScrollOffset())
+	}
+}
+
+func TestScrollOffset_StaysZeroWhenNoScrollNeeded(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+	})
+	list.SetVisibleHeight(5) // More visible space than items
+
+	list.SelectNext() // Select index 1
+
+	if list.ScrollOffset() != 0 {
+		t.Errorf("ScrollOffset() = %d, want 0 (enough room for all items)", list.ScrollOffset())
+	}
+}
+
+// =============================================================================
+// VisibleItems Tests
+// =============================================================================
+
+func TestVisibleItems_ReturnsCorrectWindow(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+		{Name: "Gamma", ID: 3},
+		{Name: "Delta", ID: 4},
+		{Name: "Epsilon", ID: 5},
+	})
+	list.SetVisibleHeight(3)
+
+	items := list.VisibleItems()
+	if len(items) != 3 {
+		t.Fatalf("VisibleItems() length = %d, want 3", len(items))
+	}
+	if items[0].Name != "Alpha" {
+		t.Errorf("VisibleItems()[0].Name = %q, want %q", items[0].Name, "Alpha")
+	}
+	if items[2].Name != "Gamma" {
+		t.Errorf("VisibleItems()[2].Name = %q, want %q", items[2].Name, "Gamma")
+	}
+}
+
+func TestVisibleItems_ShiftsWhenScrolled(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+		{Name: "Gamma", ID: 3},
+		{Name: "Delta", ID: 4},
+		{Name: "Epsilon", ID: 5},
+	})
+	list.SetVisibleHeight(3)
+
+	// Navigate to item 3 (index 3) — should scroll so items 1,2,3 are visible
+	list.Select(3)
+
+	items := list.VisibleItems()
+	if len(items) != 3 {
+		t.Fatalf("VisibleItems() length = %d, want 3", len(items))
+	}
+	if items[0].Name != "Beta" {
+		t.Errorf("VisibleItems()[0].Name = %q, want %q", items[0].Name, "Beta")
+	}
+	if items[2].Name != "Delta" {
+		t.Errorf("VisibleItems()[2].Name = %q, want %q", items[2].Name, "Delta")
+	}
+}
+
+func TestVisibleItems_ReturnsEmptyForEmptyList(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetVisibleHeight(5)
+
+	items := list.VisibleItems()
+	if items == nil {
+		t.Error("VisibleItems() should return empty slice, not nil")
+	}
+	if len(items) != 0 {
+		t.Errorf("VisibleItems() length = %d, want 0", len(items))
+	}
+}
+
+func TestVisibleItems_ReturnsAllItemsWhenFewerThanHeight(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+	})
+	list.SetVisibleHeight(10)
+
+	items := list.VisibleItems()
+	if len(items) != 2 {
+		t.Errorf("VisibleItems() length = %d, want 2", len(items))
+	}
+}
+
+func TestVisibleItems_ReturnsAllItemsWhenHeightZero(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+		{Name: "Gamma", ID: 3},
+	})
+	list.SetVisibleHeight(0)
+
+	// visibleHeight 0 means no viewport constraint — returns all items
+	items := list.VisibleItems()
+	if len(items) != 3 {
+		t.Errorf("VisibleItems() with height 0: length = %d, want 3", len(items))
+	}
+}
+
+func TestVisibleItems_ReturnsAllItemsWhenHeightNotSet(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+	})
+
+	// Never called SetVisibleHeight — default is 0
+	items := list.VisibleItems()
+	if len(items) != 2 {
+		t.Errorf("VisibleItems() with no height set: length = %d, want 2", len(items))
+	}
+}
+
+// =============================================================================
+// SelectNext Scroll Offset Tests
+// =============================================================================
+
+func TestSelectNext_ScrollsDownWhenPastVisibleWindow(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "A", ID: 1},
+		{Name: "B", ID: 2},
+		{Name: "C", ID: 3},
+		{Name: "D", ID: 4},
+		{Name: "E", ID: 5},
+	})
+	list.SetVisibleHeight(3)
+
+	// Navigate past visible window: items 0,1,2 visible initially
+	list.SelectNext() // idx 1, offset 0
+	list.SelectNext() // idx 2, offset 0
+	list.SelectNext() // idx 3, offset should adjust to 1
+
+	if list.ScrollOffset() != 1 {
+		t.Errorf("ScrollOffset() = %d, want 1", list.ScrollOffset())
+	}
+
+	// Selected item should be visible in the window
+	items := list.VisibleItems()
+	found := false
+	for _, item := range items {
+		if item.Name == "D" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Selected item 'D' should be in VisibleItems()")
+	}
+}
+
+func TestSelectNext_ScrollsToEndCorrectly(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "A", ID: 1},
+		{Name: "B", ID: 2},
+		{Name: "C", ID: 3},
+		{Name: "D", ID: 4},
+		{Name: "E", ID: 5},
+	})
+	list.SetVisibleHeight(3)
+
+	// Navigate to last item
+	for i := 0; i < 4; i++ {
+		list.SelectNext()
+	}
+
+	if list.SelectedIndex() != 4 {
+		t.Errorf("SelectedIndex() = %d, want 4", list.SelectedIndex())
+	}
+
+	// scrollOffset = 4 - 3 + 1 = 2
+	if list.ScrollOffset() != 2 {
+		t.Errorf("ScrollOffset() = %d, want 2", list.ScrollOffset())
+	}
+}
+
+// =============================================================================
+// SelectPrev Scroll Offset Tests
+// =============================================================================
+
+func TestSelectPrev_ScrollsUpWhenAboveVisibleWindow(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "A", ID: 1},
+		{Name: "B", ID: 2},
+		{Name: "C", ID: 3},
+		{Name: "D", ID: 4},
+		{Name: "E", ID: 5},
+	})
+	list.SetVisibleHeight(3)
+
+	// Navigate to end first
+	list.Select(4) // scrollOffset = 2, visible: C,D,E
+
+	// Navigate back up
+	list.SelectPrev() // idx 3, offset 2 (still in window)
+	list.SelectPrev() // idx 2, offset 2 (at top of window)
+	list.SelectPrev() // idx 1, offset should adjust to 1
+
+	if list.ScrollOffset() != 1 {
+		t.Errorf("ScrollOffset() = %d, want 1", list.ScrollOffset())
+	}
+}
+
+func TestSelectPrev_ScrollsToTopCorrectly(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "A", ID: 1},
+		{Name: "B", ID: 2},
+		{Name: "C", ID: 3},
+		{Name: "D", ID: 4},
+		{Name: "E", ID: 5},
+	})
+	list.SetVisibleHeight(3)
+
+	// Navigate to end
+	list.Select(4)
+
+	// Navigate all the way back to top
+	for i := 0; i < 4; i++ {
+		list.SelectPrev()
+	}
+
+	if list.SelectedIndex() != 0 {
+		t.Errorf("SelectedIndex() = %d, want 0", list.SelectedIndex())
+	}
+	if list.ScrollOffset() != 0 {
+		t.Errorf("ScrollOffset() = %d, want 0", list.ScrollOffset())
+	}
+}
+
+// =============================================================================
+// Select Scroll Offset Tests
+// =============================================================================
+
+func TestSelect_AdjustsScrollOffsetForArbitraryIndex(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "A", ID: 1},
+		{Name: "B", ID: 2},
+		{Name: "C", ID: 3},
+		{Name: "D", ID: 4},
+		{Name: "E", ID: 5},
+		{Name: "F", ID: 6},
+		{Name: "G", ID: 7},
+		{Name: "H", ID: 8},
+		{Name: "I", ID: 9},
+		{Name: "J", ID: 10},
+	})
+	list.SetVisibleHeight(3)
+
+	// Jump to middle
+	list.Select(5) // offset = 5 - 3 + 1 = 3
+
+	if list.ScrollOffset() != 3 {
+		t.Errorf("ScrollOffset() = %d, want 3", list.ScrollOffset())
+	}
+
+	// Jump back to start
+	list.Select(0) // offset = 0
+
+	if list.ScrollOffset() != 0 {
+		t.Errorf("ScrollOffset() = %d, want 0", list.ScrollOffset())
+	}
+
+	// Jump to end
+	list.Select(9) // offset = 9 - 3 + 1 = 7
+
+	if list.ScrollOffset() != 7 {
+		t.Errorf("ScrollOffset() = %d, want 7", list.ScrollOffset())
+	}
+}
+
+// =============================================================================
+// Reset Scroll Offset Tests
+// =============================================================================
+
+func TestReset_ResetsScrollOffset(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "A", ID: 1},
+		{Name: "B", ID: 2},
+		{Name: "C", ID: 3},
+		{Name: "D", ID: 4},
+		{Name: "E", ID: 5},
+	})
+	list.SetVisibleHeight(2)
+
+	// Scroll to the end
+	list.Select(4)
+
+	if list.ScrollOffset() == 0 {
+		t.Fatal("ScrollOffset() should be non-zero before Reset()")
+	}
+
+	list.Reset()
+
+	if list.ScrollOffset() != 0 {
+		t.Errorf("After Reset(), ScrollOffset() = %d, want 0", list.ScrollOffset())
+	}
+	if list.SelectedIndex() != 0 {
+		t.Errorf("After Reset(), SelectedIndex() = %d, want 0", list.SelectedIndex())
+	}
+}
+
+// =============================================================================
+// SetFilter / SetItems Scroll Offset Clamping Tests
+// =============================================================================
+
+func TestSetFilter_ClampsScrollOffset(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Alpha", ID: 1},
+		{Name: "Beta", ID: 2},
+		{Name: "Gamma", ID: 3},
+		{Name: "Delta", ID: 4},
+		{Name: "Epsilon", ID: 5},
+	})
+	list.SetVisibleHeight(2)
+
+	// Navigate to end
+	list.Select(4) // scrollOffset = 3
+
+	if list.ScrollOffset() != 3 {
+		t.Fatalf("ScrollOffset() = %d, want 3 before filter", list.ScrollOffset())
+	}
+
+	// Filter to just 2 items — scrollOffset must be clamped
+	list.SetFilter("a") // Alpha, Gamma, Delta match "a" = 3 items
+
+	offset := list.ScrollOffset()
+	maxOffset := list.Len() - 2 // Len - visibleHeight
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	if offset > maxOffset {
+		t.Errorf("After filter, ScrollOffset() = %d, exceeds maxOffset %d", offset, maxOffset)
+	}
+}
+
+func TestSetItems_ClampsScrollOffset(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "A", ID: 1},
+		{Name: "B", ID: 2},
+		{Name: "C", ID: 3},
+		{Name: "D", ID: 4},
+		{Name: "E", ID: 5},
+	})
+	list.SetVisibleHeight(2)
+
+	// Navigate to end
+	list.Select(4) // scrollOffset = 3
+
+	// Replace with fewer items
+	list.SetItems([]testItem{
+		{Name: "X", ID: 1},
+		{Name: "Y", ID: 2},
+	})
+
+	offset := list.ScrollOffset()
+	if offset != 0 {
+		t.Errorf("After replacing items, ScrollOffset() = %d, want 0", offset)
+	}
+}
+
+// =============================================================================
+// Scroll Edge Cases Tests
+// =============================================================================
+
+func TestScroll_SingleItem(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "Only", ID: 1},
+	})
+	list.SetVisibleHeight(3)
+
+	if list.ScrollOffset() != 0 {
+		t.Errorf("ScrollOffset() = %d, want 0 for single item", list.ScrollOffset())
+	}
+
+	items := list.VisibleItems()
+	if len(items) != 1 {
+		t.Errorf("VisibleItems() length = %d, want 1", len(items))
+	}
+}
+
+func TestScroll_EmptyListWithVisibleHeight(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetVisibleHeight(5)
+
+	if list.ScrollOffset() != 0 {
+		t.Errorf("ScrollOffset() = %d, want 0 for empty list", list.ScrollOffset())
+	}
+
+	items := list.VisibleItems()
+	if len(items) != 0 {
+		t.Errorf("VisibleItems() length = %d, want 0 for empty list", len(items))
+	}
+}
+
+func TestScroll_VisibleHeightExactlyMatchesItemCount(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+	list.SetItems([]testItem{
+		{Name: "A", ID: 1},
+		{Name: "B", ID: 2},
+		{Name: "C", ID: 3},
+	})
+	list.SetVisibleHeight(3)
+
+	// Navigate to last item — should not scroll since all fit
+	list.Select(2)
+
+	if list.ScrollOffset() != 0 {
+		t.Errorf("ScrollOffset() = %d, want 0 when all items fit", list.ScrollOffset())
+	}
+
+	items := list.VisibleItems()
+	if len(items) != 3 {
+		t.Errorf("VisibleItems() length = %d, want 3", len(items))
+	}
+}
+
+// =============================================================================
+// Concurrent Scroll Tests
+// =============================================================================
+
+func TestFilteredList_ConcurrentScrollOperations(t *testing.T) {
+	list := NewFilteredList(testMatchFn)
+
+	items := make([]testItem, 100)
+	for i := 0; i < 100; i++ {
+		items[i] = testItem{Name: "Item", ID: i}
+	}
+	list.SetItems(items)
+	list.SetVisibleHeight(10)
+
+	var wg sync.WaitGroup
+	numGoroutines := 50
+
+	// Writers: navigate and change visible height
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			if id%3 == 0 {
+				list.SelectNext()
+			} else if id%3 == 1 {
+				list.SelectPrev()
+			} else {
+				list.SetVisibleHeight(id%20 + 1)
+			}
+		}(i)
+	}
+
+	// Readers: read scroll state
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = list.ScrollOffset()
+			_ = list.VisibleItems()
+		}()
+	}
+
+	wg.Wait()
+
+	// Verify scroll offset is valid
+	offset := list.ScrollOffset()
+	if offset < 0 {
+		t.Errorf("ScrollOffset() = %d, should be >= 0", offset)
 	}
 }
 

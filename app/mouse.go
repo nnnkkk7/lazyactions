@@ -43,7 +43,7 @@ func (a *App) handleClick(x, y int) (tea.Model, tea.Cmd) {
 	if y < panelHeight {
 		// Workflows panel
 		a.focusedPane = WorkflowsPane
-		itemIdx := y - BorderOffset
+		itemIdx := y - BorderOffset + a.workflows.ScrollOffset()
 		if itemIdx >= 0 && itemIdx < a.workflows.Len() {
 			a.workflows.Select(itemIdx)
 			return a, a.onWorkflowSelectionChange()
@@ -51,7 +51,7 @@ func (a *App) handleClick(x, y int) (tea.Model, tea.Cmd) {
 	} else if y < 2*panelHeight {
 		// Runs panel
 		a.focusedPane = RunsPane
-		itemIdx := y - panelHeight - BorderOffset
+		itemIdx := y - panelHeight - BorderOffset + a.runs.ScrollOffset()
 		if itemIdx >= 0 && itemIdx < a.runs.Len() {
 			a.runs.Select(itemIdx)
 			return a, a.onRunSelectionChange()
@@ -59,7 +59,7 @@ func (a *App) handleClick(x, y int) (tea.Model, tea.Cmd) {
 	} else if y < totalHeight {
 		// Jobs panel
 		a.focusedPane = JobsPane
-		itemIdx := y - 2*panelHeight - BorderOffset
+		itemIdx := y - 2*panelHeight - BorderOffset + a.jobs.ScrollOffset()
 		if itemIdx >= 0 && itemIdx < a.jobs.Len() {
 			a.jobs.Select(itemIdx)
 			return a, a.onJobSelectionChange()

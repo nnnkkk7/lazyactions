@@ -379,3 +379,125 @@ func TestApp_ApplyFilterOnJobsPane(t *testing.T) {
 		t.Errorf("jobs.Len() = %d, want 1 after filter", app.jobs.Len())
 	}
 }
+
+// =============================================================================
+// JobUp / JobDown (w/s key) Tests
+// =============================================================================
+
+func TestApp_HandleKeyPress_JobDown_InJobsPane(t *testing.T) {
+	mock := newMockClient(nil)
+	app := New(WithClient(mock))
+	app.focusedPane = JobsPane
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build"},
+		{ID: 2, Name: "test"},
+		{ID: 3, Name: "deploy"},
+	})
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}}
+	app.handleKeyPress(msg)
+
+	if app.jobs.SelectedIndex() != 1 {
+		t.Errorf("After 's' key, jobs.SelectedIndex() = %d, want 1", app.jobs.SelectedIndex())
+	}
+}
+
+func TestApp_HandleKeyPress_JobUp_InJobsPane(t *testing.T) {
+	mock := newMockClient(nil)
+	app := New(WithClient(mock))
+	app.focusedPane = JobsPane
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build"},
+		{ID: 2, Name: "test"},
+		{ID: 3, Name: "deploy"},
+	})
+	app.jobs.SelectNext() // select index 1
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}}
+	app.handleKeyPress(msg)
+
+	if app.jobs.SelectedIndex() != 0 {
+		t.Errorf("After 'w' key, jobs.SelectedIndex() = %d, want 0", app.jobs.SelectedIndex())
+	}
+}
+
+func TestApp_HandleKeyPress_JobDown_NoOpInWorkflowsPane(t *testing.T) {
+	app := New()
+	app.focusedPane = WorkflowsPane
+	app.workflows.SetItems([]github.Workflow{
+		{ID: 1, Name: "CI"},
+		{ID: 2, Name: "Deploy"},
+	})
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}}
+	app.handleKeyPress(msg)
+
+	// 's' should not affect workflows selection
+	if app.workflows.SelectedIndex() != 0 {
+		t.Errorf("'s' in WorkflowsPane: workflows.SelectedIndex() = %d, want 0", app.workflows.SelectedIndex())
+	}
+}
+
+func TestApp_HandleKeyPress_JobUp_NoOpInRunsPane(t *testing.T) {
+	app := New()
+	app.focusedPane = RunsPane
+	app.runs.SetItems([]github.Run{
+		{ID: 1, Name: "Run 1"},
+		{ID: 2, Name: "Run 2"},
+	})
+	app.runs.SelectNext() // select index 1
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}}
+	app.handleKeyPress(msg)
+
+	// 'w' should not affect runs selection
+	if app.runs.SelectedIndex() != 1 {
+		t.Errorf("'w' in RunsPane: runs.SelectedIndex() = %d, want 1", app.runs.SelectedIndex())
+	}
+}
+
+func TestApp_HandleKeyPress_JobDown_MultipleNavigation(t *testing.T) {
+	mock := newMockClient(nil)
+	app := New(WithClient(mock))
+	app.focusedPane = JobsPane
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build"},
+		{ID: 2, Name: "test"},
+		{ID: 3, Name: "deploy"},
+	})
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}}
+
+	// Navigate down twice
+	app.handleKeyPress(msg)
+	app.handleKeyPress(msg)
+
+	if app.jobs.SelectedIndex() != 2 {
+		t.Errorf("After two 's' keys, jobs.SelectedIndex() = %d, want 2", app.jobs.SelectedIndex())
+	}
+
+	// Navigate down again — should stay at last item
+	app.handleKeyPress(msg)
+
+	if app.jobs.SelectedIndex() != 2 {
+		t.Errorf("After third 's' key, jobs.SelectedIndex() = %d, want 2 (at end)", app.jobs.SelectedIndex())
+	}
+}
+
+func TestApp_HandleKeyPress_JobUp_AtTop(t *testing.T) {
+	mock := newMockClient(nil)
+	app := New(WithClient(mock))
+	app.focusedPane = JobsPane
+	app.jobs.SetItems([]github.Job{
+		{ID: 1, Name: "build"},
+		{ID: 2, Name: "test"},
+	})
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}}
+	app.handleKeyPress(msg)
+
+	// Already at top — should stay at 0
+	if app.jobs.SelectedIndex() != 0 {
+		t.Errorf("'w' at top: jobs.SelectedIndex() = %d, want 0", app.jobs.SelectedIndex())
+	}
+}

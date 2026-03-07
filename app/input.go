@@ -49,6 +49,18 @@ func (a *App) handleKeyPress(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, a.keys.Down):
 		return a.navigateDown()
 
+	case key.Matches(msg, a.keys.JobUp):
+		if a.focusedPane == JobsPane {
+			a.jobs.SelectPrev()
+			return a.onJobSelectionChange()
+		}
+
+	case key.Matches(msg, a.keys.JobDown):
+		if a.focusedPane == JobsPane {
+			a.jobs.SelectNext()
+			return a.onJobSelectionChange()
+		}
+
 	case key.Matches(msg, a.keys.PanelUp):
 		return a.focusPrevPaneWithSelect()
 

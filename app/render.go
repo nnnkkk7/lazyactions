@@ -21,11 +21,16 @@ func (a *App) buildWorkflowsPanel(width, height int) []string {
 	}
 	title := renderPanelTitle(titleText, focused)
 
+	// Set visible height so scroll offset is maintained
+	contentHeight := height - BorderWidth
+	a.workflows.SetVisibleHeight(contentHeight)
+
 	// Build content
 	leftWidth := a.leftPanelWidth()
+	scrollOffset := a.workflows.ScrollOffset()
 	var content []string
-	items := a.workflows.Items()
-	if len(items) == 0 {
+	items := a.workflows.VisibleItems()
+	if a.workflows.Len() == 0 {
 		if a.loading {
 			content = append(content, "  Loading...")
 		} else {
@@ -33,7 +38,8 @@ func (a *App) buildWorkflowsPanel(width, height int) []string {
 		}
 	} else {
 		for i, wf := range items {
-			selected := i == a.workflows.SelectedIndex()
+			realIdx := scrollOffset + i
+			selected := realIdx == a.workflows.SelectedIndex()
 			hovered := a.mouseX < leftWidth && a.mouseY == i+BorderOffset
 			name := truncateString(wf.Name, width-ItemPaddingSmall)
 			content = append(content, a.renderListItem(name, selected, focused, hovered))
@@ -49,18 +55,24 @@ func (a *App) buildRunsPanel(width, height int) []string {
 	borderStyle := getPanelBorderStyle(focused)
 	title := renderPanelTitle("Runs", focused)
 
+	// Set visible height so scroll offset is maintained
+	contentHeight := height - BorderWidth
+	a.runs.SetVisibleHeight(contentHeight)
+
 	// Calculate panel position for hover detection
 	leftWidth := a.leftPanelWidth()
 	panelStartY := a.panelStartY(RunsPane)
+	scrollOffset := a.runs.ScrollOffset()
 
 	// Build content
 	var content []string
-	items := a.runs.Items()
-	if len(items) == 0 {
+	items := a.runs.VisibleItems()
+	if a.runs.Len() == 0 {
 		content = append(content, "  Select workflow")
 	} else {
 		for i, run := range items {
-			selected := i == a.runs.SelectedIndex()
+			realIdx := scrollOffset + i
+			selected := realIdx == a.runs.SelectedIndex()
 			hovered := a.mouseX < leftWidth && a.mouseY == panelStartY+i+BorderOffset
 			icon := StatusIcon(run.Status, run.Conclusion)
 			line := icon + " #" + strconv.Itoa(run.RunNumber) + " " + run.Event + " " + run.Branch
@@ -78,18 +90,24 @@ func (a *App) buildJobsPanel(width, height int) []string {
 	borderStyle := getPanelBorderStyle(focused)
 	title := renderPanelTitle("Jobs", focused)
 
+	// Set visible height so scroll offset is maintained
+	contentHeight := height - BorderWidth
+	a.jobs.SetVisibleHeight(contentHeight)
+
 	// Calculate panel position for hover detection
 	leftWidth := a.leftPanelWidth()
 	panelStartY := a.panelStartY(JobsPane)
+	scrollOffset := a.jobs.ScrollOffset()
 
 	// Build content
 	var content []string
-	items := a.jobs.Items()
-	if len(items) == 0 {
+	items := a.jobs.VisibleItems()
+	if a.jobs.Len() == 0 {
 		content = append(content, "  Select a run")
 	} else {
 		for i, job := range items {
-			selected := i == a.jobs.SelectedIndex()
+			realIdx := scrollOffset + i
+			selected := realIdx == a.jobs.SelectedIndex()
 			hovered := a.mouseX < leftWidth && a.mouseY == panelStartY+i+BorderOffset
 			icon := StatusIcon(job.Status, job.Conclusion)
 			line := icon + " " + truncateString(job.Name, width-ItemPaddingMedium)
@@ -420,6 +438,7 @@ Panel Navigation
 j           Next panel (down)
 k           Previous panel (up)
 ↓/↑         Move in list (down/up)
+w/s         Previous/next job
 h/←         Previous pane
 l/→         Next pane
 Tab         Next pane
