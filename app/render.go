@@ -368,7 +368,7 @@ func truncateToWidth(s string, maxWidth int) string {
 // renderStatusBar renders the status bar at the bottom
 func (a *App) renderStatusBar() string {
 	// Navigation hints
-	navHints := "[j/k]panel [↑/↓]list"
+	navHints := "[j/k]panel [↑/↓]list [w/s]job"
 
 	// Pane-specific action hints
 	var actionHints string
