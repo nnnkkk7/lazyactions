@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.0.13](https://github.com/nnnkkk7/lazyactions/compare/v0.0.12...v0.0.13) - 2026-03-15
+- ci: bump actions/checkout from 6.0.1 to 6.0.2 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/59
+- ci: bump Songmu/tagpr from 1.11.1 to 1.12.1 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/58
+- ci: bump Songmu/tagpr from 1.12.1 to 1.15.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/61
+- fix: clone request before setting authorization header by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/63
+- deps: bump github.com/charmbracelet/bubbles from 0.21.0 to 0.21.1 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/62
+- ci: bump Songmu/tagpr from 1.15.0 to 1.17.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/64
+- ci: bump goreleaser/goreleaser-action from 6.4.0 to 7.0.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/66
+- ci: bump Songmu/tagpr from 1.17.0 to 1.17.1 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/68
+- ci: bump actions/setup-go from 6.2.0 to 6.3.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/67
+- feat: add viewport scrolling for left panels and w/s job navigation by @ericmortebidbax in https://github.com/nnnkkk7/lazyactions/pull/69
+
 ## [v0.0.12](https://github.com/nnnkkk7/lazyactions/compare/v0.0.11...v0.0.12) - 2026-01-22
 - refactor: remove unused functions by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/54
 - fix: use RetryWithBackoff by @nnnkkk7 in https://github.com/nnnkkk7/lazyactions/pull/56
