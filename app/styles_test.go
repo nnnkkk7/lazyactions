@@ -3,8 +3,6 @@ package app
 import (
 	"strings"
 	"testing"
-
-	"github.com/charmbracelet/lipgloss"
 )
 
 // =============================================================================
@@ -270,11 +268,11 @@ func TestStyleVariables_NotNil(t *testing.T) {
 }
 
 func TestColorVariables(t *testing.T) {
-	// Verify color values
-	if FocusedColor != lipgloss.Color("#00FF00") {
-		t.Errorf("FocusedColor = %v, want #00FF00", FocusedColor)
+	// Verify color values match CurrentTheme
+	if FocusedColor != CurrentTheme.FocusedColor {
+		t.Errorf("FocusedColor = %v, want %v", FocusedColor, CurrentTheme.FocusedColor)
 	}
-	if UnfocusedColor != lipgloss.Color("#666666") {
-		t.Errorf("UnfocusedColor = %v, want #666666", UnfocusedColor)
+	if UnfocusedColor != CurrentTheme.UnfocusedColor {
+		t.Errorf("UnfocusedColor = %v, want %v", UnfocusedColor, CurrentTheme.UnfocusedColor)
 	}
 }
