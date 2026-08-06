@@ -19,30 +19,30 @@ type Config struct {
 type CustomThemeConfig struct {
 	FocusedColor            string `yaml:"focusedColor"`
 	UnfocusedColor          string `yaml:"unfocusedColor"`
-	SelectedItemFg         string `yaml:"selectedItemFg"`
-	SelectedItemBg         string `yaml:"selectedItemBg"`
+	SelectedItemFg          string `yaml:"selectedItemFg"`
+	SelectedItemBg          string `yaml:"selectedItemBg"`
 	UnfocusedSelectedItemFg string `yaml:"unfocusedSelectedItemFg"`
 	UnfocusedSelectedItemBg string `yaml:"unfocusedSelectedItemBg"`
-	CursorFg               string `yaml:"cursorFg"`
-	NormalItemFg           string `yaml:"normalItemFg"`
-	StatusSuccess          string `yaml:"statusSuccess"`
-	StatusFailure          string `yaml:"statusFailure"`
-	StatusRunning          string `yaml:"statusRunning"`
-	StatusQueued           string `yaml:"statusQueued"`
-	StatusCancelled        string `yaml:"statusCancelled"`
-	StatusBarBg            string `yaml:"statusBarBg"`
-	StatusBarFg            string `yaml:"statusBarFg"`
-	ConfirmBorder          string `yaml:"confirmBorder"`
-	HelpBorder             string `yaml:"helpBorder"`
-	LogTimestamp           string `yaml:"logTimestamp"`
-	LogGroup               string `yaml:"logGroup"`
-	LogEndGroup            string `yaml:"logEndGroup"`
-	LogError               string `yaml:"logError"`
-	LogWarning             string `yaml:"logWarning"`
-	LogNotice              string `yaml:"logNotice"`
-	LogErrorKeyword        string `yaml:"logErrorKeyword"`
-	LogWarningKeyword      string `yaml:"logWarningKeyword"`
-	LogSuccessKeyword      string `yaml:"logSuccessKeyword"`
+	CursorFg                string `yaml:"cursorFg"`
+	NormalItemFg            string `yaml:"normalItemFg"`
+	StatusSuccess           string `yaml:"statusSuccess"`
+	StatusFailure           string `yaml:"statusFailure"`
+	StatusRunning           string `yaml:"statusRunning"`
+	StatusQueued            string `yaml:"statusQueued"`
+	StatusCancelled         string `yaml:"statusCancelled"`
+	StatusBarBg             string `yaml:"statusBarBg"`
+	StatusBarFg             string `yaml:"statusBarFg"`
+	ConfirmBorder           string `yaml:"confirmBorder"`
+	HelpBorder              string `yaml:"helpBorder"`
+	LogTimestamp            string `yaml:"logTimestamp"`
+	LogGroup                string `yaml:"logGroup"`
+	LogEndGroup             string `yaml:"logEndGroup"`
+	LogError                string `yaml:"logError"`
+	LogWarning              string `yaml:"logWarning"`
+	LogNotice               string `yaml:"logNotice"`
+	LogErrorKeyword         string `yaml:"logErrorKeyword"`
+	LogWarningKeyword       string `yaml:"logWarningKeyword"`
+	LogSuccessKeyword       string `yaml:"logSuccessKeyword"`
 }
 
 // DefaultConfig returns the default application configuration.
