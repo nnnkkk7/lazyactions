@@ -19,7 +19,7 @@ type Workflow struct {
 // Run represents a workflow run.
 type Run struct {
 	ID         int64
-	RunNumber  int    // Sequential run number (e.g., 21 for #21)
+	RunNumber  int // Sequential run number (e.g., 21 for #21)
 	Name       string
 	Status     string // queued, in_progress, completed
 	Conclusion string // success, failure, cancelled
