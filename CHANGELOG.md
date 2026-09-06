@@ -1,5 +1,22 @@
 # Changelog
 
+## [v0.0.14](https://github.com/nnnkkk7/lazyactions/compare/v0.0.13...v0.0.14) - 2026-09-06
+
+- ci: bump Songmu/tagpr from 1.17.1 to 1.18.3 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/74
+- ci: bump actions/setup-go from 6.3.0 to 6.4.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/71
+- ci: bump goreleaser/goreleaser-action from 7.0.0 to 7.2.1 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/76
+- ci: bump Songmu/tagpr from 1.18.3 to 1.19.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/77
+- ci: bump goreleaser/goreleaser-action from 7.2.1 to 7.2.2 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/78
+- ci: bump actions/checkout from 6.0.2 to 6.0.3 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/80
+- ci: bump Songmu/tagpr from 1.19.0 to 1.20.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/79
+- ci: bump goreleaser/goreleaser-action from 7.2.2 to 7.2.3 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/83
+- ci: bump actions/checkout from 6.0.3 to 7.0.1 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/86
+- ci: bump actions/setup-go from 6.4.0 to 7.0.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/84
+- ci: bump Songmu/tagpr from 1.20.0 to 1.20.1 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/85
+- deps: bump github.com/charmbracelet/bubbles from 0.21.1 to 1.0.0 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/65
+- ci: bump Songmu/tagpr from 1.20.1 to 1.20.2 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/88
+- ci: bump Songmu/tagpr from 1.20.2 to 1.20.3 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/89
+
 ## [v0.0.13](https://github.com/nnnkkk7/lazyactions/compare/v0.0.12...v0.0.13) - 2026-03-15
 - ci: bump actions/checkout from 6.0.1 to 6.0.2 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/59
 - ci: bump Songmu/tagpr from 1.11.1 to 1.12.1 by @dependabot[bot] in https://github.com/nnnkkk7/lazyactions/pull/58
