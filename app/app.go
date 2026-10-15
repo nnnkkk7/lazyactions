@@ -461,8 +461,21 @@ func formatRunNumber(id int64) string {
 	return strconv.FormatInt(id, 10)
 }
 
+// WithTheme sets the application theme
+func WithTheme(t Theme) Option {
+	return func(a *App) {
+		ApplyTheme(t)
+	}
+}
+
 // Run starts the TUI application
 func Run(client github.Client, repo github.Repository) error {
+	// Load user config and apply configured theme
+	cfg, err := LoadConfig()
+	if err == nil && cfg != nil {
+		ApplyTheme(cfg.ResolveTheme())
+	}
+
 	// Display startup banner
 	PrintBanner()
 
@@ -475,6 +488,6 @@ func Run(client github.Client, repo github.Repository) error {
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 	)
-	_, err := p.Run()
+	_, err = p.Run()
 	return err
 }

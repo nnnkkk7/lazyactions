@@ -6,120 +6,142 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Color palette - semantic color names for consistent theming
-var (
-	// Primary colors
-	ColorGreen      = lipgloss.Color("#00FF00") // Success, focused, running
-	ColorRed        = lipgloss.Color("#FF0000") // Error, failure
-	ColorYellow     = lipgloss.Color("#FFFF00") // Running, in-progress
-	ColorCyan       = lipgloss.Color("#00FFFF") // Info, timestamp, notice
-	ColorOrange     = lipgloss.Color("#FF8800") // Warning, cancelled
-	ColorBlack      = lipgloss.Color("#000000") // Text on bright backgrounds
-	ColorWhite      = lipgloss.Color("#FFFFFF") // Bright text
-	ColorDarkGray   = lipgloss.Color("#333333") // Status bar background
-	ColorMediumGray = lipgloss.Color("#666666") // Unfocused elements
-	ColorLightGray  = lipgloss.Color("#888888") // Queued, dim text
-	ColorSilver     = lipgloss.Color("#AAAAAA") // Normal text
-	ColorPaleGray   = lipgloss.Color("#CCCCCC") // Unfocused selected text
-
-	// Accent colors
-	ColorBlue         = lipgloss.Color("#0066CC") // Selection background
-	ColorDarkBlue     = lipgloss.Color("#444444") // Unfocused selection background
-	ColorDarkGreen    = lipgloss.Color("#006600") // End group marker
-	ColorLightRed     = lipgloss.Color("#FF6666") // Error keyword highlight
-	ColorLightOrange  = lipgloss.Color("#FFAA00") // Warning keyword highlight
-	ColorLightGreen   = lipgloss.Color("#66FF66") // Success keyword highlight
-)
+// Active theme instance
+var CurrentTheme Theme
 
 // UI state colors - semantic aliases
 var (
-	FocusedColor   = ColorGreen
-	UnfocusedColor = ColorMediumGray
+	FocusedColor   lipgloss.Color
+	UnfocusedColor lipgloss.Color
 )
 
-// Pane styles - use thin border for compact UI
+// Pane styles
 var (
-	FocusedPane = lipgloss.NewStyle().
-			Border(lipgloss.NormalBorder()).
-			BorderForeground(FocusedColor)
-
-	UnfocusedPane = lipgloss.NewStyle().
-			Border(lipgloss.NormalBorder()).
-			BorderForeground(UnfocusedColor)
+	FocusedPane   lipgloss.Style
+	UnfocusedPane lipgloss.Style
 )
 
-// Title styles - lazydocker style inverted title for focused panel
+// Title styles
 var (
-	FocusedTitle = lipgloss.NewStyle().
-			Background(FocusedColor).
-			Foreground(ColorBlack).
-			Bold(true)
-
-	UnfocusedTitle = lipgloss.NewStyle().
-			Foreground(UnfocusedColor)
+	FocusedTitle   lipgloss.Style
+	UnfocusedTitle lipgloss.Style
 )
 
 // Status icon styles
 var (
-	SuccessStyle   = lipgloss.NewStyle().Foreground(ColorGreen)
-	FailureStyle   = lipgloss.NewStyle().Foreground(ColorRed)
-	RunningStyle   = lipgloss.NewStyle().Foreground(ColorYellow)
-	QueuedStyle    = lipgloss.NewStyle().Foreground(ColorLightGray)
-	CancelledStyle = lipgloss.NewStyle().Foreground(ColorOrange)
+	SuccessStyle   lipgloss.Style
+	FailureStyle   lipgloss.Style
+	RunningStyle   lipgloss.Style
+	QueuedStyle    lipgloss.Style
+	CancelledStyle lipgloss.Style
 )
 
-// Selection styles - lazydocker style: bright selection for focused, dim for unfocused
+// Selection styles
 var (
-	SelectedItemFocused = lipgloss.NewStyle().
-				Foreground(ColorWhite).
-				Background(ColorBlue).
-				Bold(true)
-
-	SelectedItemUnfocused = lipgloss.NewStyle().
-				Foreground(ColorPaleGray).
-				Background(ColorDarkBlue)
-
-	// Cursor style for selected item
-	CursorStyle = lipgloss.NewStyle().
-			Foreground(FocusedColor).
-			Bold(true)
-
-	NormalItem = lipgloss.NewStyle().
-			Foreground(ColorSilver)
-
-	// Keep backward compatibility
-	SelectedItem = SelectedItemFocused
+	SelectedItemFocused   lipgloss.Style
+	SelectedItemUnfocused lipgloss.Style
+	CursorStyle           lipgloss.Style
+	NormalItem            lipgloss.Style
+	SelectedItem          lipgloss.Style // Backward compatibility alias
 )
 
 // Dialog styles
 var (
-	ConfirmDialog = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(ColorOrange).
-			Padding(1, 2)
-
-	HelpPopup = lipgloss.NewStyle().
-			Border(lipgloss.DoubleBorder()).
-			BorderForeground(ColorCyan).
-			Padding(1, 2)
-
-	StatusBar = lipgloss.NewStyle().
-			Background(ColorDarkGray).
-			Padding(0, 1)
+	ConfirmDialog lipgloss.Style
+	HelpPopup     lipgloss.Style
+	StatusBar     lipgloss.Style
 )
 
 // Log syntax highlighting styles
 var (
-	LogTimestampStyle = lipgloss.NewStyle().Foreground(ColorCyan)
-	LogGroupStyle     = lipgloss.NewStyle().Foreground(ColorGreen).Bold(true)
-	LogEndGroupStyle  = lipgloss.NewStyle().Foreground(ColorDarkGreen)
-	LogErrorStyle     = lipgloss.NewStyle().Foreground(ColorRed).Bold(true)
-	LogWarningStyle   = lipgloss.NewStyle().Foreground(ColorOrange)
-	LogNoticeStyle    = lipgloss.NewStyle().Foreground(ColorCyan)
-	LogErrorKeyword   = lipgloss.NewStyle().Foreground(ColorLightRed)
-	LogWarningKeyword = lipgloss.NewStyle().Foreground(ColorLightOrange)
-	LogSuccessKeyword = lipgloss.NewStyle().Foreground(ColorLightGreen)
+	LogTimestampStyle lipgloss.Style
+	LogGroupStyle     lipgloss.Style
+	LogEndGroupStyle  lipgloss.Style
+	LogErrorStyle     lipgloss.Style
+	LogWarningStyle   lipgloss.Style
+	LogNoticeStyle    lipgloss.Style
+	LogErrorKeyword   lipgloss.Style
+	LogWarningKeyword lipgloss.Style
+	LogSuccessKeyword lipgloss.Style
 )
+
+func init() {
+	// Apply Catppuccin Mocha by default at startup
+	ApplyTheme(CatppuccinMocha)
+}
+
+// ApplyTheme configures all exported Lipgloss styles to use the given Theme palette.
+func ApplyTheme(t Theme) {
+	CurrentTheme = t
+
+	FocusedColor = t.FocusedColor
+	UnfocusedColor = t.UnfocusedColor
+
+	FocusedPane = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(t.FocusedColor)
+
+	UnfocusedPane = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(t.UnfocusedColor)
+
+	FocusedTitle = lipgloss.NewStyle().
+		Background(t.FocusedColor).
+		Foreground(t.StatusBarBg).
+		Bold(true)
+
+	UnfocusedTitle = lipgloss.NewStyle().
+		Foreground(t.UnfocusedColor)
+
+	SuccessStyle = lipgloss.NewStyle().Foreground(t.StatusSuccess)
+	FailureStyle = lipgloss.NewStyle().Foreground(t.StatusFailure)
+	RunningStyle = lipgloss.NewStyle().Foreground(t.StatusRunning)
+	QueuedStyle = lipgloss.NewStyle().Foreground(t.StatusQueued)
+	CancelledStyle = lipgloss.NewStyle().Foreground(t.StatusCancelled)
+
+	SelectedItemFocused = lipgloss.NewStyle().
+		Foreground(t.SelectedItemFg).
+		Background(t.SelectedItemBg).
+		Bold(true)
+
+	SelectedItemUnfocused = lipgloss.NewStyle().
+		Foreground(t.UnfocusedSelectedItemFg).
+		Background(t.UnfocusedSelectedItemBg)
+
+	CursorStyle = lipgloss.NewStyle().
+		Foreground(t.CursorFg).
+		Bold(true)
+
+	NormalItem = lipgloss.NewStyle().
+		Foreground(t.NormalItemFg)
+
+	SelectedItem = SelectedItemFocused
+
+	ConfirmDialog = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(t.ConfirmBorder).
+		Padding(1, 2)
+
+	HelpPopup = lipgloss.NewStyle().
+		Border(lipgloss.DoubleBorder()).
+		BorderForeground(t.HelpBorder).
+		Padding(1, 2)
+
+	StatusBar = lipgloss.NewStyle().
+		Background(t.StatusBarBg).
+		Foreground(t.StatusBarFg).
+		Padding(0, 1)
+
+	LogTimestampStyle = lipgloss.NewStyle().Foreground(t.LogTimestamp)
+	LogGroupStyle = lipgloss.NewStyle().Foreground(t.LogGroup).Bold(true)
+	LogEndGroupStyle = lipgloss.NewStyle().Foreground(t.LogEndGroup)
+	LogErrorStyle = lipgloss.NewStyle().Foreground(t.LogError).Bold(true)
+	LogWarningStyle = lipgloss.NewStyle().Foreground(t.LogWarning)
+	LogNoticeStyle = lipgloss.NewStyle().Foreground(t.LogNotice)
+	LogErrorKeyword = lipgloss.NewStyle().Foreground(t.LogErrorKeyword)
+	LogWarningKeyword = lipgloss.NewStyle().Foreground(t.LogWarningKeyword)
+	LogSuccessKeyword = lipgloss.NewStyle().Foreground(t.LogSuccessKeyword)
+}
 
 // StatusIcon returns icon for status
 func StatusIcon(status, conclusion string) string {
