@@ -259,4 +259,3 @@ func TestModal_KeyBlockingInModal(t *testing.T) {
 		}
 	})
 }
-

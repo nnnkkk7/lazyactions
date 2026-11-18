@@ -80,14 +80,35 @@ export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 
 > **Note:** GitHub Enterprise is not currently supported. Only `github.com` repositories are supported at this time.
 
-## Usage
+## Configuration & Themes
 
-```bash
-# Run in any git repository
-lazyactions
+`lazyactions` supports customizable themes and Catppuccin color palettes via `~/.config/lazyactions/config.yml`.
 
-# Or specify a path
-lazyactions /path/to/repo
+### Presets
+
+Built-in theme presets:
+- `catppuccin-mocha` (Default)
+- `catppuccin-macchiato`
+- `catppuccin-frappe`
+- `catppuccin-latte` (Light theme)
+- `default` (Classic green/cyan theme)
+
+### Configuration Example
+
+Create `~/.config/lazyactions/config.yml`:
+
+```yaml
+# Select a built-in theme preset
+theme: catppuccin-mocha
+
+# (Optional) Fine-grained color overrides (hex codes)
+customTheme:
+  focusedColor: "#89b4fa"
+  unfocusedColor: "#585b70"
+  selectedItemFg: "#cdd6f4"
+  selectedItemBg: "#313244"
+  statusSuccess: "#a6e3a1"
+  statusFailure: "#f38ba8"
 ```
 
 ## Keybindings

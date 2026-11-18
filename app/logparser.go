@@ -129,11 +129,11 @@ func (p *ParsedLogs) formatStepLogsWithFunc(stepIndex int, formatter func(string
 
 // GitHub Actions marker regexes
 var (
-	errorMarkerRegex   = regexp.MustCompile(`##\[error\]`)
-	warningMarkerRegex = regexp.MustCompile(`##\[warning\]`)
-	noticeMarkerRegex  = regexp.MustCompile(`##\[notice\]`)
-	errorKeywordRegex  = regexp.MustCompile(`(?i)\b(error|failed|failure|panic)\b`)
-	warnKeywordRegex   = regexp.MustCompile(`(?i)\b(warning|warn)\b`)
+	errorMarkerRegex    = regexp.MustCompile(`##\[error\]`)
+	warningMarkerRegex  = regexp.MustCompile(`##\[warning\]`)
+	noticeMarkerRegex   = regexp.MustCompile(`##\[notice\]`)
+	errorKeywordRegex   = regexp.MustCompile(`(?i)\b(error|failed|failure|panic)\b`)
+	warnKeywordRegex    = regexp.MustCompile(`(?i)\b(warning|warn)\b`)
 	successKeywordRegex = regexp.MustCompile(`(?i)\b(success|passed|ok)\b`)
 )
 

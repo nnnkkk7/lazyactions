@@ -255,4 +255,3 @@ func TestView_StatusIcons(t *testing.T) {
 		})
 	}
 }
-
